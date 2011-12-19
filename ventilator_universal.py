@@ -5,7 +5,7 @@ import os
 import pysam
 from subprocess import Popen, PIPE
 import string
-
+import glob
 import time
 
 context = zmq.Context(8)
