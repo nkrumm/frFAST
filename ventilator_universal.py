@@ -69,7 +69,7 @@ elif os.path.isdir(source_filename):
 		errorMsg("ERROR VENT no FASTQ files found in folder (or folder does not exist): " + source_filename)
 	try:
 		source = gzipfolder_line(source_filename)
-	except IOError:
+	except:
 		errorMsg("ERROR VENT cannot open fastq.gz folder: " + source_filename)
 	
 else:
