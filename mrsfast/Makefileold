@@ -1,0 +1,9 @@
+ALL: mrsfast
+
+LDFLAGS=-static
+LIBS=-lz -lm -lzmq
+CFLAGS=-O2
+
+mrsfast: baseFAST.o MrsFAST.o Common.o CommandLineParser.o RefGenome.o HashTable.o Reads.o Output.o
+	gcc $^ -o $@ ${LDFLAGS} ${LIBS}
+	rm *.o
