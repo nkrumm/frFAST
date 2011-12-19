@@ -18,7 +18,7 @@ start_time = time.time()
                                ######### OPTIONS ###########
 ################################################################################################
 parser = argparse.ArgumentParser(description='This is frFAST (frankenFAST), a lightweight pipeline designed to calculate read-depth across an exome or genome using the mrsFAST mapper. \nNik Krumm, 2011')
-parser.add_argument('--source', required=True, metavar='/path/to/source_file.bam', type=str, nargs='?',help="Source BAM to be processed")
+parser.add_argument('--source', required=True, metavar='/path/to/source_file.bam | /path/to/fastq_folder/', type=str, nargs='?',help="Source to be processed. Either a bam file or folder of gzipped-FASTQ files (files must end with .gz).")
 parser.add_argument('--output', required=True, metavar='/path/to/output_file.h5', type=str, nargs='?',help="Output location of HDF5 file")
 parser.add_argument('--log_directory','--log_dir', required=True, metavar='/path/to/log_directory', type=str, nargs='?',help="Location of log directory. Will be created if necessary.")
 parser.add_argument('--sampleID', required=True, metavar='sampleID', type=str, nargs='?',help="Unique sampleID string")
@@ -60,7 +60,7 @@ mem_requested = {"mapper": "2G", "vent": "1G", "sink": "3G"}
 BASEFILE =  os.path.realpath(__file__)
 BASEPATH =  os.path.dirname(BASEFILE)
 
-scriptFiles= {"map":  BASEPATH + "/mrsfast_wrapper.py", "vent": BASEPATH + "/ventilator_bam3.3.py", "sink": BASEPATH + "/sink5.py"}
+scriptFiles= {"map":  BASEPATH + "/mrsfast_wrapper.py", "vent": BASEPATH + "/ventilator_universal.py", "sink": BASEPATH + "/sink5.py"}
 totalMappers = 9
 maximum_reads_per_destination = 1000000
 
