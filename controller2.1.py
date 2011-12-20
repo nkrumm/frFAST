@@ -21,6 +21,7 @@ parser = argparse.ArgumentParser(description='This is frFAST (frankenFAST), a li
 parser.add_argument('--source', required=True, metavar='/path/to/source_file.bam | /path/to/fastq_folder/', type=str, nargs='?',help="Source to be processed. Either a bam file or folder of gzipped-FASTQ files (files must end with .gz).")
 parser.add_argument('--output', required=True, metavar='/path/to/output_file.h5', type=str, nargs='?',help="Output location of HDF5 file")
 parser.add_argument('--log_directory','--log_dir', required=True, metavar='/path/to/log_directory', type=str, nargs='?',help="Location of log directory. Will be created if necessary.")
+parser.add_argument('--error_log', required=False, default="", metavar='/path/to/universal_error_file', type=str, nargs='?',help="Location of central error file. Output is appended to file, but file is created if necessary.")
 parser.add_argument('--sampleID', required=True, metavar='sampleID', type=str, nargs='?',help="Unique sampleID string")
 parser.add_argument('--index', metavar='/path/to/index.fa', type=str, default="/var/tmp/exome/exome_19_masked.fa", nargs='?',help="Location of index file used for mapping\n Default: /var/tmp/exome/exome_19_masked.fa")
 parser.add_argument('--port','-p', metavar='8000', type=int, nargs="?", default = 8000,\
@@ -43,8 +44,8 @@ tcpPortIndex = args.port #int(sys.argv[2])
 source_filename = args.source #'/net/grc/shared/released_exomes/'+sampleID+'/'+sampleID+'.merged.sorted.nodups.realigned.all_reads.bam'
 sink_outfile = args.output #"/net/grc/shared/scratch/nkrumm/ESP2000/HDF5/" + sampleID + ".h5"
 
-split_length = 36 # NOTE: more than 1 split is not supported right now!
-read_length = 'AUTO' #50 # can by 'AUTO' and will check this automatically..
+split_length = 36 # only 36 is currently supported!
+read_length = 'AUTO'
 
 # Todo-- check if this exists on cluster nodes
 indexFile = args.index #"/var/tmp/exome/exome_19_masked.fa"
@@ -73,9 +74,18 @@ maximum_reads_per_destination = 1000000
 if os.path.exists(logDirectory) != True:
 	os.mkdir(logDirectory)
 
+if args.error_log !="":
+	if os.path.exists(args.error_log):
+		f_univerror = open(args.error_log,'a')
+	else:
+		f_univerror = open(args.error_log,'w')
+else:
+	f_univerror = None
+
 f_log = open(logDirectory + "/messages.log",'w')
 f_summary = open(logDirectory + "/summary.log",'w')
 f_contigs = open(logDirectory + "/contigs.log",'w')
+
 
 msgHistory = []
 	
@@ -214,7 +224,8 @@ while True:
 	if args.timeout != 0: # timeout enabled
 		if time_last_msg - time.time() >= args.timeout:
 			if sink_is_ready and vent_is_ready and mappers_started:
-				quitController("Timeout Exceeded!", logDirectory, job_ids, f_log, f_summary, f_contigs, gui)
+				error_msg = "%s Timeout Exceeded!" % sampleID
+				quitController(error_msg, logDirectory, job_ids, f_log, f_summary, f_univerror, f_contigs, gui)
 	
 	if sink_is_ready and vent_is_ready:
 		if not mappers_started:
@@ -305,7 +316,7 @@ while True:
 				ventilated_reads[mapperID] = int(read_counter)
 				if mapper_received_reads.has_key(mapperID) and ventilated_reads[mapperID] != mapper_received_reads[mapperID]:
 					updateMessages(msgHistory, msgScreen, f_log, logLevel, "[MAPPER] ERROR! mapper did not receive all the ventilated reads!" + data)
-					quitController("ERROR! mapper did not receive all the ventilated reads!\n" + message, logDirectory, job_ids, f_log, f_summary, f_contigs, gui)			
+					quitController("ERROR! mapper did not receive all the ventilated reads!\n" + message, logDirectory, job_ids, f_log, f_summary, f_univerror, f_contigs, gui)			
 			
 			
 			elif cmd == 'FINISHED':
@@ -352,7 +363,7 @@ while True:
 					mapper_received_reads[mapperID] = int(inputCnt) + int(discardedCnt)
 					if ventilated_reads.has_key(mapperID) and ventilated_reads[mapperID] != mapper_received_reads[mapperID]:
 						updateMessages(msgHistory, msgScreen, f_log, logLevel, "[MAPPER] ERROR! mapper did not receive all the ventilated reads!" + data)
-						quitController("ERROR! mapper did not receive all the ventilated reads!\n" + message, logDirectory, job_ids, f_log, f_summary, f_contigs, gui)
+						quitController("ERROR! mapper did not receive all the ventilated reads!\n" + message, logDirectory, job_ids, f_log, f_summary,f_univerror, f_contigs, gui)
 			
 			elif cmd == 'UPDATE':
 				#updateMessages(msgHistory, msgScreen, f_log, logLevel, "UPDATE received: "+ data)
@@ -459,6 +470,6 @@ while True:
 				sys.exit(0)
 		
 		elif sender == 'ERROR':
-			quitController("ERROR MESSAGE RECEIVED!\n" + message, logDirectory, job_ids, f_log, f_summary, f_contigs, gui)
+			quitController("ERROR MESSAGE RECEIVED!\n" + message, logDirectory, job_ids, f_log, f_summary,f_univerror, f_contigs, gui)
 		else:
 			print "unkown sender", message
