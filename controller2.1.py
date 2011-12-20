@@ -55,7 +55,7 @@ logLevel = 1 # 1: log messages to file,  0: no logging TODO: turn off/on SGE log
 logDirectory = args.log_directory + "/" #"/net/grc/shared/scratch/nkrumm/ESP2000/Logs/" + sampleID + "/"
 
 job_names = {"map": "map" + sampleID, "vent": "vent" + sampleID, "sink": "sink" + sampleID}
-mem_requested = {"mapper": "2G", "vent": "1G", "sink": "3G"}
+mem_requested = {"mapper": "1500M", "vent": "500M", "sink": "2G"}
 
 BASEFILE =  os.path.realpath(__file__)
 BASEPATH =  os.path.dirname(BASEFILE)
@@ -160,6 +160,8 @@ job_ids["sink"] = output.split(" ")[2]
 mappers = mapper.Mappers(totalMappers)
 curr_mapperID = 0
 
+ventilated_reads = {}
+mapper_received_reads = {}
 
 #############################
 # MAIN CONTROL LOOP
@@ -294,13 +296,18 @@ while True:
 				
 			elif cmd == 'DONE':
 				read_counter, total_reads, destination, mapperID = data.split(" ")
-				updateMessages(msgHistory, msgScreen, f_log, logLevel, "[VENT] Ventilator done with writing "+str(read_counter)+ " reads to " + destination + "; total time: " + str(time.time()-vent_time))
+				updateMessages(msgHistory, msgScreen, f_log, logLevel, "[VENT] Ventilator done with writing "+str(read_counter)+ " reads to " + str(mapperID) + "; total time: " + str(time.time()-vent_time))
 				socket.send("ok")
 				mappers.updateMapperTask(mapperID, "Waiting")
 				#mappers.printMappers()
 				updateScreen(screen,mappers.mappers)
 				updateStats(statsData, start_time, statScreen,{"ventreadcnt":read_counter})
-				
+				ventilated_reads[mapperID] = int(read_counter)
+				if mapper_received_reads.has_key(mapperID) and ventilated_reads[mapperID] != mapper_received_reads[mapperID]:
+					updateMessages(msgHistory, msgScreen, f_log, logLevel, "[MAPPER] ERROR! mapper did not receive all the ventilated reads!" + data)
+					quitController("ERROR! mapper did not receive all the ventilated reads!\n" + message, logDirectory, job_ids, f_log, f_summary, f_contigs, gui)			
+			
+			
 			elif cmd == 'FINISHED':
 				read_counter, total_reads = data.split(" ")
 				updateMessages(msgHistory, msgScreen, f_log, logLevel, "[VENT] Ventilator done with all reads!; total reads ventilated = " + str(total_reads))
@@ -324,7 +331,7 @@ while True:
 			elif cmd == 'GETVENTADDRESS':
 				socket.send("tcp://" + ventilator_address + ":" + str(VENT2MAPPER_PORT))
 			elif cmd == 'INPUT':
-				mapperID, inputCnt = data.split(" ")
+				mapperID, inputCnt, discardedCnt = data.split(" ")
 				if int(inputCnt) == 0:
 					# All the reads were discarded!
 					# the mapper will restart, but we need to delete the mappers entry here, as this mapperID is now dead!
@@ -332,9 +339,21 @@ while True:
 					socket.send("ok")
 					mappers.updateMapperTask(int(mapperID), "Done")
 					mappers.stopMapper(int(mapperID))
+# 				
+# 				elif ventilated_reads.has_key(mapperID) and int(inputCnt) + int(discardedCnt) == ventilated_reads[mapperID]:
+# 					mappers.updateMapperTask(mapperID, "Got Input")
+# 					socket.send("ok")
+# 				elif not ventilated_reads.has_key(mapperID):
+# 					updateMessages(msgHistory, msgScreen, f_log, logLevel, "[MAPPER] ERROR! ventilated_reads does not include mapperID yet!" + data)
+# 					socket.send("ok")					
 				else:
 					mappers.updateMapperTask(mapperID, "Got Input")
 					socket.send("ok")
+					mapper_received_reads[mapperID] = int(inputCnt) + int(discardedCnt)
+					if ventilated_reads.has_key(mapperID) and ventilated_reads[mapperID] != mapper_received_reads[mapperID]:
+						updateMessages(msgHistory, msgScreen, f_log, logLevel, "[MAPPER] ERROR! mapper did not receive all the ventilated reads!" + data)
+						quitController("ERROR! mapper did not receive all the ventilated reads!\n" + message, logDirectory, job_ids, f_log, f_summary, f_contigs, gui)
+			
 			elif cmd == 'UPDATE':
 				#updateMessages(msgHistory, msgScreen, f_log, logLevel, "UPDATE received: "+ data)
 				mapperID, contig, mappingCnt, mappedSeqCnt = data.split(" ")

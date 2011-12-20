@@ -171,11 +171,15 @@ while not endOfFile:
 				_ = requester.recv()
 				exit(0)
 	
-	readstreamer.send("DONE 0")
+	
 	print "Done ventilating to " + node + " in " + str(time.time() -t1) + " s"
+	
+	readstreamer.send("DONE 0")
+	readstreamer.close()
+	
 	requester.send("VENT DONE " + str(read_counter) + " " + str(read_counter) + " " + node + " " + str(mapperID))
 	_ = requester.recv()
-	readstreamer.close()
+	
 	time.sleep(1);
 
 
