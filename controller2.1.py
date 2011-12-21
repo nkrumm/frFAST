@@ -222,7 +222,7 @@ time_last_msg  = time.time()
 
 while True:
 	if args.timeout != 0: # timeout enabled
-		if time_last_msg - time.time() >= args.timeout:
+		if time.time() - time_last_msg  >= args.timeout:
 			if sink_is_ready and vent_is_ready and mappers_started:
 				error_msg = "%s Timeout Exceeded!" % sampleID
 				quitController(error_msg, logDirectory, job_ids, f_log, f_summary, f_univerror, f_contigs, gui)
