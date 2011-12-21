@@ -107,13 +107,13 @@ def updateStats(statsData, start_time, screen, data): # data is a dictionary! {"
 def quitController(quitMessage, logDirectory, job_ids, f_log, f_summary,f_univerror, f_contigs, gui):
 	# an error occurred-- mark and start on the next one
 	f_error = open(logDirectory + "/error.log",'w')
-	if quitmessage != None:
+	if quitMessage != None:
 		f_error.write(quitMessage + "\n")
 	
 	if f_univerror != None:
 		f_univerror.write(quitMessage + "\n")
 		f_univerror.close()
-		
+	
 	for jobID in job_ids.values():
 		o,e = deleteQSub(jobID)
 		f_error.write(o)

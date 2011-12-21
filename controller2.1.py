@@ -473,5 +473,6 @@ while True:
 			quitController("ERROR MESSAGE RECEIVED!\n" + message, logDirectory, job_ids, f_log, f_summary,f_univerror, f_contigs, gui)
 		elif sender == 'WARNING':
 			updateMessages(msgHistory, msgScreen, f_log, logLevel, "[" + str(t2-t_start) + "] " + message)
+			socket.send("ok")
 		else:
 			print "unkown sender", message
