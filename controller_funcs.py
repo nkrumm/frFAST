@@ -113,7 +113,7 @@ def quitController(quitMessage, logDirectory, job_ids, f_log, f_summary,f_univer
 	if f_univerror != None:
 		f_univerror.write(quitMessage + "\n")
 		f_univerror.close()
-	
+		
 	for jobID in job_ids.values():
 		o,e = deleteQSub(jobID)
 		f_error.write(o)

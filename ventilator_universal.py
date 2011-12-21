@@ -151,7 +151,7 @@ while not endOfFile:
 				read_counter += 2
 			else:
 				# send error message
-				requester.send("ERROR VENT found non-standard read length: "  + str(read.rlen) + " -- " + str(read))
+				requester.send("WARNING VENT found non-standard read length: "  + str(read.rlen) + " -- " + str(read))
 				_ = requester.recv()
 				exit(0)
 		else:
@@ -167,7 +167,7 @@ while not endOfFile:
 				read_counter += 2
 			else:
 				# send error message
-				requester.send("ERROR VENT found non-standard read length: " + str(read.rlen) + " -- " + str(read))
+				requester.send("WARNING VENT found non-standard read length: " + str(read.rlen) + " -- " + str(read))
 				_ = requester.recv()
 				exit(0)
 	
