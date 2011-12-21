@@ -8,6 +8,11 @@ import string
 import glob
 import time
 
+def errorMsg(msg):
+	requester.send(msg)
+	_ = requester.recv()
+	exit(0)
+
 context = zmq.Context(8)
 
 # connect to controller
@@ -21,18 +26,19 @@ VENT2MAPPER_PORT = controllerport +2 #formerly  :8000
 
 print "Will be using port %d as vent-->mapper port (formerly :8000)" % VENT2MAPPER_PORT
 
-requester = context.socket(zmq.REQ);
-requester.connect("tcp://" + controlleraddress + ":" +str(controllerport))
+try:
+	requester = context.socket(zmq.REQ);
+	requester.connect("tcp://" + controlleraddress + ":" +str(controllerport))
+except zmq.core.error.ZMQError:
+	# port already in use!
+	errorMsg("ERROR VENT controller port not available!")
 
 nodeaddress = os.uname()[1]
 
 requester.send("VENT REGISTER " + nodeaddress)
 _ = requester.recv()
 
-def errorMsg(msg):
-	requester.send(msg)
-	_ = requester.recv()
-	exit(0)
+
 
 def gzipfolder_line(folder_path):
 	f = Popen('zcat ' + folder_path, shell=True, stdout=PIPE)
@@ -122,9 +128,14 @@ while not endOfFile:
 	# TODO, multithread here. will need to pull in additional file pipes to read BAM file.
 	
 	print "received as mapper node: ", node
+	try:
+		readstreamer = context.socket(zmq.PUSH)
+		readstreamer.bind("tcp://*:" + str(VENT2MAPPER_PORT)) # TODO, set up the port based on received information
+	except zmq.core.error.ZMQError:
+		# port already in use!
+		errorMsg("ERROR VENT mapper readstream port not available!")
 	
-	readstreamer = context.socket(zmq.PUSH)
-	readstreamer.bind("tcp://*:" + str(VENT2MAPPER_PORT)) # TODO, set up the port based on received information
+		
 	readstreamer.send(str(maximum_reads_per_destination))
 	read_counter = 0
 	#total_reads = 0
