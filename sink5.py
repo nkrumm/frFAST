@@ -16,6 +16,11 @@ from collections import defaultdict
 from subprocess import Popen, PIPE
 import zmq
 
+def errorMsg(msg):
+	requester.send(msg)
+	_ = requester.recv()
+	exit(0)
+
 context = zmq.Context(8)
 
 
@@ -38,8 +43,12 @@ nodeaddress = os.uname()[1]
 requester.send("SINK REGISTER " + nodeaddress)
 _ = requester.recv()
 
-insock = context.socket(zmq.PULL)
-insock.bind("tcp://*:"+ str(MAPPER2SINK_PORT))
+try:
+	insock = context.socket(zmq.PULL)
+	insock.bind("tcp://*:"+ str(MAPPER2SINK_PORT))
+except zmq.core.error.ZMQError:
+	# port already in use!
+	errorMsg("ERROR SINK mapper insock port not available!")
 
 quit_signal = False
 

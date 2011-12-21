@@ -31,7 +31,9 @@ try:
 	requester.connect("tcp://" + controlleraddress + ":" +str(controllerport))
 except zmq.core.error.ZMQError:
 	# port already in use!
-	errorMsg("ERROR VENT controller port not available!")
+	# obviouslly cannot communicate via this port, must just exit.
+	print "ERROR VENT controller port not available!"
+	sys.exit(0)
 
 nodeaddress = os.uname()[1]
 
@@ -130,12 +132,12 @@ while not endOfFile:
 	print "received as mapper node: ", node
 	try:
 		readstreamer = context.socket(zmq.PUSH)
-		readstreamer.bind("tcp://*:" + str(VENT2MAPPER_PORT)) # TODO, set up the port based on received information
+		readstreamer.bind("tcp://*:" + str(VENT2MAPPER_PORT))
 	except zmq.core.error.ZMQError:
 		# port already in use!
 		errorMsg("ERROR VENT mapper readstream port not available!")
 	
-		
+	
 	readstreamer.send(str(maximum_reads_per_destination))
 	read_counter = 0
 	#total_reads = 0
