@@ -186,6 +186,7 @@ while not endOfFile:
 	
 	
 	print "Done ventilating to " + node + " in " + str(time.time() -t1) + " s"
+	#sys.stdout.flush()
 	
 	readstreamer.send("DONE 0")
 	readstreamer.close()

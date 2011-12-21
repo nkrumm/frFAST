@@ -471,7 +471,7 @@ while True:
 				sys.exit(0)
 		
 		elif sender == 'ERROR':
-			quitController("ERROR MESSAGE RECEIVED!\n" + message, logDirectory, job_ids, f_log, f_summary,f_univerror, f_contigs, gui)
+			quitController("ERROR [" + sampleID + "] " +  message, logDirectory, job_ids, f_log, f_summary,f_univerror, f_contigs, gui)
 		elif sender == 'WARNING':
 			updateMessages(msgHistory, msgScreen, f_log, logLevel, "[" + str(t2-t_start) + "] " + message)
 			socket.send("ok")
