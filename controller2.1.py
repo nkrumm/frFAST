@@ -65,6 +65,7 @@ scriptFiles= {"map":  BASEPATH + "/mrsfast_wrapper.py", "vent": BASEPATH + "/ven
 totalMappers = 9
 maximum_reads_per_destination = 1000000
 
+INDEXDIRPATH = '/net/grc/shared/scratch/nkrumm/INDEX/exome'
 
 ################################################################################################
 ################################################################################################
@@ -231,7 +232,7 @@ while True:
 		if not mappers_started:
 			# START ZE MAPPERS!
 			
-			tempscript = writeQSubFile("python " + scriptFiles["map"] + " " + controllerNodeName+" " + str(REQ_REP_PORT) + " " + BASEPATH)
+			tempscript = writeQSubFile("python " + scriptFiles["map"] + " " + controllerNodeName+" " + str(REQ_REP_PORT) + " " + BASEPATH + " " + INDEXDIRPATH)
 			
 			qsub_cmd = "qsub -l mem_requested=%s -q all.q,prod.q -t 1-%d -S /bin/bash -cwd -o %s -e %s -N %s -j y %s" % (mem_requested["mapper"], mappers.numMappers, logDirectory, logDirectory,job_names["map"],tempscript.name)
 			output,e = submitQSub(qsub_cmd)
