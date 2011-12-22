@@ -225,7 +225,7 @@ while True:
 	if args.timeout != 0: # timeout enabled
 		if time.time() - time_last_msg  >= args.timeout:
 			if sink_is_ready and vent_is_ready and mappers_started:
-				error_msg = "%s Timeout Exceeded!" % sampleID
+				error_msg = "ERROR [%s] Timeout Exceeded!" % sampleID
 				quitController(error_msg, logDirectory, job_ids, f_log, f_summary, f_univerror, f_contigs, gui)
 	
 	if sink_is_ready and vent_is_ready:
@@ -317,7 +317,8 @@ while True:
 				ventilated_reads[mapperID] = int(read_counter)
 				if mapper_received_reads.has_key(mapperID) and ventilated_reads[mapperID] != mapper_received_reads[mapperID]:
 					updateMessages(msgHistory, msgScreen, f_log, logLevel, "[MAPPER] ERROR! mapper did not receive all the ventilated reads!" + data)
-					quitController("ERROR! mapper did not receive all the ventilated reads!\n" + message, logDirectory, job_ids, f_log, f_summary, f_univerror, f_contigs, gui)			
+					error_msg = "ERROR [%s] Mapper did not receive all the ventilated reads!: %s" % (sampleID, message)
+					quitController(error_msg, logDirectory, job_ids, f_log, f_summary, f_univerror, f_contigs, gui)			
 			
 			
 			elif cmd == 'FINISHED':
@@ -364,8 +365,9 @@ while True:
 					mapper_received_reads[mapperID] = int(inputCnt) + int(discardedCnt)
 					if ventilated_reads.has_key(mapperID) and ventilated_reads[mapperID] != mapper_received_reads[mapperID]:
 						updateMessages(msgHistory, msgScreen, f_log, logLevel, "[MAPPER] ERROR! mapper did not receive all the ventilated reads!" + data)
-						quitController("ERROR! mapper did not receive all the ventilated reads!\n" + message, logDirectory, job_ids, f_log, f_summary,f_univerror, f_contigs, gui)
-			
+						error_msg = "ERROR [%s] Mapper did not receive all the ventilated reads!: %s" % (sampleID, message)
+						quitController(error_msg, logDirectory, job_ids, f_log, f_summary, f_univerror, f_contigs, gui)
+					
 			elif cmd == 'UPDATE':
 				#updateMessages(msgHistory, msgScreen, f_log, logLevel, "UPDATE received: "+ data)
 				mapperID, contig, mappingCnt, mappedSeqCnt = data.split(" ")
