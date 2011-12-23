@@ -194,8 +194,8 @@ int readAllReads(char *fileName1,
 			discarded++;
 		}
 		
-	// TO DO ADD BREAK CONIDITION FOR LAST PART OF SEQUENCE
-		if (recvdCnt == maxCnt) { break;} // break out of while(1) loop
+// TO DO ADD BREAK CONIDITION FOR LAST PART OF SEQUENCE
+// 		if (recvdCnt == maxCnt) { break;} // break out of while(1) loop
 	
 	}
 	
