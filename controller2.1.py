@@ -318,9 +318,7 @@ while True:
 				if mapper_received_reads.has_key(mapperID) and ventilated_reads[mapperID] != mapper_received_reads[mapperID]:
 					updateMessages(msgHistory, msgScreen, f_log, logLevel, "[MAPPER] ERROR! mapper did not receive all the ventilated reads!" + data)
 					error_msg = "ERROR [%s] Mapper did not receive all the ventilated reads!: %s" % (sampleID, message)
-					quitController(error_msg, logDirectory, job_ids, f_log, f_summary, f_univerror, f_contigs, gui)			
-			
-			
+					quitController(error_msg, logDirectory, job_ids, f_log, f_summary, f_univerror, f_contigs, gui)
 			elif cmd == 'FINISHED':
 				read_counter, total_reads = data.split(" ")
 				updateMessages(msgHistory, msgScreen, f_log, logLevel, "[VENT] Ventilator done with all reads!; total reads ventilated = " + str(total_reads))
@@ -351,14 +349,7 @@ while True:
 					updateMessages(msgHistory, msgScreen, f_log, logLevel, "[MAPPER] No valid sequences in received reads! " + data)
 					socket.send("ok")
 					mappers.updateMapperTask(int(mapperID), "Done")
-					mappers.stopMapper(int(mapperID))
-# 				
-# 				elif ventilated_reads.has_key(mapperID) and int(inputCnt) + int(discardedCnt) == ventilated_reads[mapperID]:
-# 					mappers.updateMapperTask(mapperID, "Got Input")
-# 					socket.send("ok")
-# 				elif not ventilated_reads.has_key(mapperID):
-# 					updateMessages(msgHistory, msgScreen, f_log, logLevel, "[MAPPER] ERROR! ventilated_reads does not include mapperID yet!" + data)
-# 					socket.send("ok")					
+					mappers.stopMapper(int(mapperID))	
 				else:
 					mappers.updateMapperTask(mapperID, "Got Input")
 					socket.send("ok")
@@ -367,7 +358,6 @@ while True:
 						updateMessages(msgHistory, msgScreen, f_log, logLevel, "[MAPPER] ERROR! mapper did not receive all the ventilated reads!" + data)
 						error_msg = "ERROR [%s] Mapper did not receive all the ventilated reads!: %s" % (sampleID, message)
 						quitController(error_msg, logDirectory, job_ids, f_log, f_summary, f_univerror, f_contigs, gui)
-					
 			elif cmd == 'UPDATE':
 				#updateMessages(msgHistory, msgScreen, f_log, logLevel, "UPDATE received: "+ data)
 				mapperID, contig, mappingCnt, mappedSeqCnt = data.split(" ")
