@@ -166,7 +166,7 @@ while not endOfFile:
 				# send error message
 				requester.send("WARNING VENT found non-standard read length: "  + str(read.rlen) + " -- " + str(read))
 				_ = requester.recv()
-				exit(0)
+				#exit(0)
 		else:
 			if read.rlen == 36:
 				readstreamer.send("%s %s" % (read.qname,read.seq[0:split_length]))
@@ -182,7 +182,7 @@ while not endOfFile:
 				# send error message
 				requester.send("WARNING VENT found non-standard read length: " + str(read.rlen) + " -- " + str(read))
 				_ = requester.recv()
-				exit(0)
+				#exit(0)
 	
 	
 	print "Done ventilating to " + node + " in " + str(time.time() -t1) + " s"
