@@ -220,7 +220,7 @@ int readAllReads(char *fileName1,
 		fprintf(stdout, "discarded: %d\n", discarded);
 		char out_msg [255];
 		// tell controller that no reads were received!
-		sprintf (out_msg, "MAPPER INPUT %s %d",mapperID, seqCnt, discarded);
+		sprintf (out_msg, "MAPPER INPUT %s %d %d",mapperID, seqCnt, discarded);
 		s_send (requester, out_msg);
 		s_recv (requester);
 		
