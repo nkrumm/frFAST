@@ -115,13 +115,13 @@ MAPPER2SINK_PORT = tcpPortIndex + 3 #:6000
 
 #############################
 def SIGINT_handler(signal, frame):
-	print 'EXITING! Killing qsub jobs:'
+	print 'EXITING with return code 1! Killing qsub jobs:'
 	for jobID in job_ids.values():
 		o,e = deleteQSub(jobID)
 		print o
 	if gui:
 		curses.endwin()
-	sys.exit(0)
+	sys.exit(1)
 	#curses.nocbreak(); stdscr.keypad(0); curses.echo()
 	#curses.endwin()
 
