@@ -18,26 +18,38 @@ class Mappers:
 							 "task": ""}
 		return mapperID
 	
-	def startMapper(self, mapperID,seqListSize, mappedSeqCnt):
-		self.mappers[int(mapperID)]["seqListSize"] = seqListSize
-		self.mappers[int(mapperID)]["mappedSeqCnt"] = mappedSeqCnt
-		self.mappers[int(mapperID)]["working"] = True
-		self.mappers[int(mapperID)]["rank"] += 1
+	def startMapper(self, mapperID,seqListSize=0, mappedSeqCnt=0):
+		mapperID = int(mapperID)
+		self.mappers[mapperID]["seqListSize"] = seqListSize
+		self.mappers[mapperID]["mappedSeqCnt"] = mappedSeqCnt
+		self.mappers[mapperID]["working"] = True
+		self.mappers[mapperID]["rank"] += 1
 	
 	def updateMapperTask(self, mapperID, task):
-		self.mappers[int(mapperID)]["task"] = task
-
+		try:
+			self.mappers[int(mapperID)]["task"] = task
+		except KeyError:
+			pass
+	
 	def updateMapperWorkingStatus(self, mapperID, working):
-		self.mappers[int(mapperID)]["working"] = working
+		try:
+			self.mappers[int(mapperID)]["working"] = working
+		except KeyError:
+			pass
 	
 	
 	def updateMapper(self, mapperID, contig, mappingCnt, mappedSeqCnt, task=None, working = None):
-		self.mappers[int(mapperID)]["contig"] = contig
-		self.mappers[int(mapperID)]["mappingCnt"] = mappingCnt
-		self.mappers[int(mapperID)]["mappedSeqCnt"] = mappedSeqCnt
-		if task != None:
-			self.mappers[int(mapperID)]["task"] = task
-		
+		mapperID = int(mapperID)
+		try:
+			self.mappers[mapperID]["contig"] = contig
+			self.mappers[mapperID]["mappingCnt"] = mappingCnt
+			self.mappers[mapperID]["mappedSeqCnt"] = mappedSeqCnt
+			if task != None:
+				self.mappers[mapperID]["task"] = task
+		except KeyError:
+			#mapper was already stopped
+			pass
+	
 	def stopMapper(self, mapperID, mappingCnt=0, mappedSeqCnt=0):
 		#chunks.append([mapperID, mappers[int(mapperID)]["node"], mappingCnt, mappedSeqCnt])
 		del self.mappers[int(mapperID)]
