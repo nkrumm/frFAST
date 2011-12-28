@@ -52,7 +52,8 @@ class Mappers:
 	
 	def stopMapper(self, mapperID, mappingCnt=0, mappedSeqCnt=0):
 		#chunks.append([mapperID, mappers[int(mapperID)]["node"], mappingCnt, mappedSeqCnt])
-		del self.mappers[int(mapperID)]
+		if self.mappers.has_key(int(mapperID)):
+			del self.mappers[int(mapperID)]
 	
 	def printMappers(self):
 		print "mapperID\tnode\tstatus\ttask\trank"

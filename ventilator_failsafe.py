@@ -67,7 +67,7 @@ if source_filename[-3:].lower() == 'bam':
 	except IOError:
 		errorMsg("ERROR VENT cannot open BAM file: " + source_filename)
 	
-	source = s.fetch(until_eof=True)
+	source = s #s.fetch(until_eof=True)
 	
 elif os.path.isdir(source_filename):
 	source_type = 'fastq_folder'
@@ -147,7 +147,7 @@ while not endOfFile:
 	read_counter = 0
 	#total_reads = 0
 	t1 = time.time()
-		
+	
 	if current_chunkID == chunkID: # we expect an incremented count for chunkID
 		if source_type == 'bam':
 			start_positions[chunkID] = s.tell()
@@ -156,7 +156,9 @@ while not endOfFile:
 	else: # however, if the chunkID does not increment as expected, we seek back to the requested chunkID
 		s.seek(start_positions[chunkID])
 		print "Retrying... chunkID = %d" % chunkID
-	
+		print "seeking bam file to: " + str(start_positions[chunkID])
+		print "now cursor is at: " + str(s.tell())	
+		
 	while read_counter < maximum_reads_per_destination:
 		try:
 			read = source.next()
@@ -200,7 +202,7 @@ while not endOfFile:
 	
 	
 	current_chunkID +=1	
-		
+	
 	print "Done ventilating to " + node + " in " + str(time.time() -t1) + " s"
 	#sys.stdout.flush()
 	

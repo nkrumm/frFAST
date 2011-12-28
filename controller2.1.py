@@ -370,6 +370,8 @@ while True:
 					updateMessages(msgHistory, msgScreen, f_log, logLevel, "[MAPPER] No valid sequences in received reads! " + data)
 					mappers.updateMapperTask(int(mapperID), "Done")
 					mappers.stopMapper(int(mapperID))
+					socket.send("RESTART")
+					
 				else:
 					mappers.updateMapperTask(mapperID, "Got Input")
 					mapper_received_reads[mapperID] = int(inputCnt) + int(discardedCnt)
