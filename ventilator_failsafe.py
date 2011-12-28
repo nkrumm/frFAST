@@ -117,7 +117,7 @@ read_counter = 0
 endOfFile = False 
 start_positions  = {}
 
-current_chunkID = 0
+current_chunkID = 1
 
 while not endOfFile:
 	requester.send("VENT GETDEST")
@@ -152,7 +152,7 @@ while not endOfFile:
 		if source_type == 'bam':
 			start_positions[chunkID] = s.tell()
 		elif source_type == 'fastq_folder':
-			## TODO
+			pass # todo
 	else: # however, if the chunkID does not increment as expected, we seek back to the requested chunkID
 		s.seek(start_positions[chunkID])
 		print "Retrying... chunkID = %d" % chunkID
@@ -198,9 +198,9 @@ while not endOfFile:
 				_ = requester.recv()
 				#exit(0)
 	
-	if current_chunkID == chunkID:	
-		current_chunkID +=1	
 	
+	current_chunkID +=1	
+		
 	print "Done ventilating to " + node + " in " + str(time.time() -t1) + " s"
 	#sys.stdout.flush()
 	

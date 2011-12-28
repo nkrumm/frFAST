@@ -61,7 +61,7 @@ mem_requested = {"mapper": "1500M", "vent": "500M", "sink": "2G"}
 BASEFILE =  os.path.realpath(__file__)
 BASEPATH =  os.path.dirname(BASEFILE)
 
-scriptFiles= {"map":  BASEPATH + "/mrsfast_wrapper.py", "vent": BASEPATH + "/ventilator_universal.py", "sink": BASEPATH + "/sink5.py"}
+scriptFiles= {"map":  BASEPATH + "/mrsfast_wrapper.py", "vent": BASEPATH + "/ventilator_failsafe.py", "sink": BASEPATH + "/sink5.py"}
 totalMappers = 9
 maximum_reads_per_destination = 1000000
 
@@ -173,6 +173,10 @@ curr_mapperID = 0
 
 ventilated_reads = {}
 mapper_received_reads = {}
+
+
+retry_chunk_queue = []
+chunkID_lookup = {}
 
 #############################
 # MAIN CONTROL LOOP
@@ -287,10 +291,19 @@ while True:
 			
 			elif cmd == 'GETDEST':
 				
-				dest,nextMapperID = mappers.getNextDestination()				
+				dest,nextMapperID = mappers.getNextDestination()
+				
 				if nextMapperID != None:
-					msg = str(dest) + " " + str(nextMapperID)
+					if len(retry_chunk_queue) == 0:
+						chunkID = int(nextMapperID)
+						chunkID_lookup[int(nextMapperID)] = chunkID
+					else:
+						chunkID = int(retry_chunk_queue.pop())
+						chunkID_lookup[int(nextMapperID)] = chunkID
+					
+					msg = "%s %d %d" % (str(dest), nextMapperID, chunkID)
 					socket.send(msg)
+					updateMessages(msgHistory, msgScreen, f_log, logLevel, "[VENT] Sending chunkID = %d to mapperID = %d at node = %s" % (chunkID, nextMapperID, str(dest)))
 					updateMessages(msgHistory, msgScreen, f_log, logLevel, "[VENT] Sending GO to "+ str(nextMapperID))
 					pubsocket.send(str(nextMapperID) + " GO") # TODO: send the port to be used by mapper
 					vent_time = time.time()
@@ -309,16 +322,24 @@ while True:
 			elif cmd == 'DONE':
 				read_counter, total_reads, destination, mapperID = data.split(" ")
 				updateMessages(msgHistory, msgScreen, f_log, logLevel, "[VENT] Ventilator done with writing "+str(read_counter)+ " reads to " + str(mapperID) + "; total time: " + str(time.time()-vent_time))
-				socket.send("ok")
+				
 				mappers.updateMapperTask(mapperID, "Waiting")
 				#mappers.printMappers()
 				updateScreen(screen,mappers.mappers)
 				updateStats(statsData, start_time, statScreen,{"ventreadcnt":read_counter})
 				ventilated_reads[mapperID] = int(read_counter)
+				
 				if mapper_received_reads.has_key(mapperID) and ventilated_reads[mapperID] != mapper_received_reads[mapperID]:
-					updateMessages(msgHistory, msgScreen, f_log, logLevel, "[MAPPER] ERROR! mapper did not receive all the ventilated reads!" + data)
-					error_msg = "ERROR [%s] Mapper did not receive all the ventilated reads!: %s" % (sampleID, message)
-					quitController(error_msg, logDirectory, job_ids, f_log, f_summary, f_univerror, f_contigs, gui)
+					updateMessages(msgHistory, msgScreen, f_log, logLevel, "[MAPPER] ERROR! mapper did not receive all the ventilated reads! " + data)
+					# mapper needs to restart
+					socket.send("RESTART")
+					mappers.stopMapper(int(mapperID))
+					# add chunkID to retry queue for ventilator
+					retry_chunk_queue.append(chunkID_lookup[int(mapperID)])
+					
+				else: #everything is OK, the mapper should proceed
+					socket.send("ok")
+			
 			elif cmd == 'FINISHED':
 				read_counter, total_reads = data.split(" ")
 				updateMessages(msgHistory, msgScreen, f_log, logLevel, "[VENT] Ventilator done with all reads!; total reads ventilated = " + str(total_reads))
@@ -347,17 +368,22 @@ while True:
 					# All the reads were discarded!
 					# the mapper will restart, but we need to delete the mappers entry here, as this mapperID is now dead!
 					updateMessages(msgHistory, msgScreen, f_log, logLevel, "[MAPPER] No valid sequences in received reads! " + data)
-					socket.send("ok")
 					mappers.updateMapperTask(int(mapperID), "Done")
-					mappers.stopMapper(int(mapperID))	
+					mappers.stopMapper(int(mapperID))
 				else:
 					mappers.updateMapperTask(mapperID, "Got Input")
-					socket.send("ok")
 					mapper_received_reads[mapperID] = int(inputCnt) + int(discardedCnt)
 					if ventilated_reads.has_key(mapperID) and ventilated_reads[mapperID] != mapper_received_reads[mapperID]:
-						updateMessages(msgHistory, msgScreen, f_log, logLevel, "[MAPPER] ERROR! mapper did not receive all the ventilated reads!" + data)
-						error_msg = "ERROR [%s] Mapper did not receive all the ventilated reads!: %s" % (sampleID, message)
-						quitController(error_msg, logDirectory, job_ids, f_log, f_summary, f_univerror, f_contigs, gui)
+						updateMessages(msgHistory, msgScreen, f_log, logLevel, "[MAPPER] ERROR! mapper did not receive all the ventilated reads! " + data)
+						# mapper needs to restart
+						socket.send("RESTART")
+						mappers.stopMapper(int(mapperID))
+						# add chunkID to retry queue for ventilator
+						retry_chunk_queue.append(chunkID_lookup[int(mapperID)])
+						
+					else: #everything is OK, the mapper should proceed
+						socket.send("ok")
+						
 			elif cmd == 'UPDATE':
 				#updateMessages(msgHistory, msgScreen, f_log, logLevel, "UPDATE received: "+ data)
 				mapperID, contig, mappingCnt, mappedSeqCnt = data.split(" ")

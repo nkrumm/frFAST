@@ -193,10 +193,7 @@ int readAllReads(char *fileName1,
 		else { // sequence had too many Ns in it!
 			discarded++;
 		}
-		
-// TO DO ADD BREAK CONIDITION FOR LAST PART OF SEQUENCE
-// 		if (recvdCnt == maxCnt) { break;} // break out of while(1) loop
-	
+			
 	}
 	
 	// CLOSE PAIR SOCKET
@@ -227,31 +224,6 @@ int readAllReads(char *fileName1,
 		return 0;
 	}
 
-
-	if (pairedEnd)
-	{
-//		seqCnt /= 2;
-	}
-
-/*
-//  Closing Files
- 	if (!compressed)
- 	{
- 		fclose(_r_fp1);
- 		if ( pairedEnd && fileName2 != NULL )
- 		{
- 			fclose(_r_fp2);
- 		}
- 	}
- 	else
- 	{
- 		gzclose(_r_gzfp1);
- 		if ( pairedEnd && fileName2 != NULL)
- 		{
- 			gzclose(_r_fp2);
- 		}
- 	}
-*/
 	*seqList = list;
 	*seqListSize = seqCnt;
 
@@ -266,8 +238,14 @@ int readAllReads(char *fileName1,
 	char out_msg [255];
 	sprintf (out_msg, "MAPPER INPUT %s %d %d",mapperID, seqCnt, discarded);
 	s_send (requester, out_msg);
-	s_recv (requester);
+	char *msg = s_recv (requester);
 	
+	if (strcmp(msg,"RESTART")==0){
+		printf("RESTART received from controller. Terminating!\n");
+		return 0; // end the while loop and terminate the mapper
+	}
+	
+	free(msg);
 	//zmq_close(readreceiver);
 	
 	return 1;
