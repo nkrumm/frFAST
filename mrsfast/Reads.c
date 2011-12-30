@@ -52,6 +52,7 @@ gzFile _r_gzfp2;
 Read *_r_seq;
 int _r_seqCnt;
 int *_r_samplingLocs;
+void *subsocket;
 
 /**********************************************/
 char *(*readFirstSeq)(char *);
@@ -244,11 +245,26 @@ int readAllReads(char *fileName1,
 		printf("RESTART received from controller. Terminating!\n");
 		return 0; // end the while loop and terminate the mapper
 	}
-	
+	else if (strcmp(msg,"WAIT")==0){
+		// wait for appropriate signal on subsocket. not using request-reply socket so that system does not hang!
+		printf("WAIT received from controller via subsocket.\n");
+		char *msg2 = s_recv (subsocket);
+		char killsig[255];
+		strcpy(killsig,mapperID);
+		strcat(killsig," RESTART");
+		if (strcmp(msg2,killsig)==0){
+			free(msg2);
+			free(msg);
+			printf("RESTART received from controller via subsocket. Terminating!\n");
+			return 0; //  terminate the mapper
+		}
+		free(msg2);
+	}
+
 	free(msg);
-	//zmq_close(readreceiver);
-	
+	printf("GO received from controller. STARTING MAPPING!\n");
 	return 1;
+
 }
 /**********************************************/
 void loadSamplingLocations(int **samplingLocs, int * samplingLocsSize)

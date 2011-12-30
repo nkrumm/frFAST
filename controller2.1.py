@@ -331,14 +331,18 @@ while True:
 				
 				if mapper_received_reads.has_key(mapperID) and ventilated_reads[mapperID] != mapper_received_reads[mapperID]:
 					updateMessages(msgHistory, msgScreen, f_log, logLevel, "[MAPPER] ERROR! mapper did not receive all the ventilated reads! " + data)
-					# mapper needs to restart
-					socket.send("RESTART")
+					
+					# the mapper is waiting here. mapper needs to restart, so tell it via subsocket
+					pubsocket.send(str(mapperID) + " RESTART")
+					
+					socket.send("RESTART") # this goes back to ventilator! NOT to the mapper
 					mappers.stopMapper(int(mapperID))
 					# add chunkID to retry queue for ventilator
 					retry_chunk_queue.append(chunkID_lookup[int(mapperID)])
 					
 				else: #everything is OK, the mapper should proceed
 					socket.send("ok")
+					pubsocket.send(str(mapperID) + " GO")
 			
 			elif cmd == 'FINISHED':
 				read_counter, total_reads = data.split(" ")
@@ -383,8 +387,11 @@ while True:
 						# add chunkID to retry queue for ventilator
 						retry_chunk_queue.append(chunkID_lookup[int(mapperID)])
 						
-					else: #everything is OK, the mapper should proceed
-						socket.send("ok")
+					elif ventilated_reads.has_key(mapperID) == False: #the mapper should WAIT until ventilator is 
+						updateMessages(msgHistory, msgScreen, f_log, logLevel, "[MAPPER] %s Waiting" % mapperID)
+						socket.send("WAIT")
+					else: # everything is OK and the mapper can proceed
+						socket.send("OK")
 						
 			elif cmd == 'UPDATE':
 				#updateMessages(msgHistory, msgScreen, f_log, logLevel, "UPDATE received: "+ data)
