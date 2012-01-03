@@ -238,7 +238,7 @@ while True:
 			
 			tempscript = writeQSubFile("python " + scriptFiles["map"] + " " + controllerNodeName+" " + str(REQ_REP_PORT) + " " + BASEPATH + " " + INDEXDIRPATH)
 			
-			qsub_cmd = "qsub -l mem_requested=%s -q all.q,prod.q -t 1-%d -S /bin/bash -cwd -o %s -e %s -N %s -j y %s" % (mem_requested["mapper"], mappers.numMappers, logDirectory, logDirectory,job_names["map"],tempscript.name)
+			qsub_cmd = "qsub -l h_vmem=%s -q all.q,prod.q -t 1-%d -S /bin/bash -cwd -o %s -e %s -N %s -j y %s" % (mem_requested["mapper"], mappers.numMappers, logDirectory, logDirectory,job_names["map"],tempscript.name)
 			output,e = submitQSub(qsub_cmd)
 			#print output,e
 			job_array = output.split(" ")[2]
