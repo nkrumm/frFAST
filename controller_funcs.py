@@ -29,7 +29,7 @@ def writeQSubFile(command):
 	tf.write("""
 	source ~/.bash_profile
 	module load modules modules-init modules-gs modules-eichler
-	module load python/2.7.2
+	module load python/2.7.2 zeromq/2.1.11
 	""" + command)
 	tf.flush()
 	return tf

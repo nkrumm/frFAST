@@ -267,7 +267,9 @@ int doMrsFAST(){
 
 int main(int argc, char *argv[])
 {
-
+	int major, minor, patch;
+	zmq_version (&major, &minor, &patch); printf ("ZMQ version is %d.%d.%d\n", major, minor, patch);
+	
 	if (!parseCommandLine(argc, argv))
 		return 1;
 	int e;

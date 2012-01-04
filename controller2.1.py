@@ -211,6 +211,7 @@ else:
 
 updateScreen(screen, mappers.mappers)
 updateMessages(msgHistory, msgScreen, f_log, logLevel, "[INFO] Controller running on: " + controllerNodeName)
+updateMessages(msgHistory, msgScreen, f_log, logLevel, "[INFO] ZMQ library version: " + str(zmq.__version__))
 updateMessages(msgHistory, msgScreen, f_log, logLevel, "[INFO] Using index: " + indexFile)
 updateMessages(msgHistory, msgScreen, f_log, logLevel, "[INFO] Using source: " + source_filename)
 updateMessages(msgHistory, msgScreen, f_log, logLevel, "[INFO] Setting as sink output file: " + sink_outfile)
