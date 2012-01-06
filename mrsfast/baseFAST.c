@@ -313,7 +313,7 @@ int main(int argc, char *argv[])
  	s_send (requester, "MAPPER GETVENTADDRESS");
  	ventNode = s_recv (requester);
 	fprintf (stdout, "got vent address: = %s \n", ventNode);	
-
+	
  	s_send (requester, "MAPPER GETINDEX");
 	
 	char *indexFileNetwork = NULL;

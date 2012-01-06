@@ -42,17 +42,18 @@ _ = requester.recv()
 
 
 
-def gzipfolder_line(folder_path):
-	f = Popen('zcat ' + folder_path, shell=True, stdout=PIPE)
+def zlib_lines(f):
+	# http://stackoverflow.com/questions/2423866/python-decompressing-gzip-chunk-by-chunk
+	d = zlib.decompressobj(16+zlib.MAX_WBITS)
+	CHUNKSIZE=1024*16
+	buffer=f.read(CHUNKSIZE)
+	while buffer:
+		for line in d.decompress(buffer).split("\n")[:-1]:
+			yield line
+		
+		buffer=f.read(CHUNKSIZE)
 
-	for line in f.stdout:
-		read.qname = line.strip("\n")
-		read.seq = f.stdout.next().strip("\n")
-		_ = f.stdout.next()
-		_ = f.stdout.next()
-		yield read
-
-# get bam file location
+# get source file location
 
 requester.send("VENT GETSOURCE")
 source_filename = requester.recv()
@@ -68,6 +69,15 @@ if source_filename[-3:].lower() == 'bam':
 		errorMsg("ERROR VENT cannot open BAM file: " + source_filename)
 	
 	source = s #s.fetch(until_eof=True)
+	
+elif source_filename[-2:].lower() == 'gz':
+	source_type = 'gzfastq'
+	try:
+		s = open(source_filename,'rb')
+	except IOError:
+		errorMsg("ERROR VENT cannot open BAM file: " + source_filename)
+	
+	source = zlib_lines(s)
 	
 elif os.path.isdir(source_filename):
 	source_type = 'fastq_folder'
@@ -151,6 +161,8 @@ while not endOfFile:
 	if current_chunkID == chunkID: # we expect an incremented count for chunkID
 		if source_type == 'bam':
 			start_positions[chunkID] = s.tell()
+		elif source_type == 'gzfastq':
+			start_positions[chunkID] = s.tell()
 		elif source_type == 'fastq_folder':
 			pass # todo
 	else: # however, if the chunkID does not increment as expected, we seek back to the requested chunkID
@@ -208,7 +220,6 @@ while not endOfFile:
 	
 	readstreamer.send("DONE 0")
 	readstreamer.close()
-	
 	
 	requester.send("VENT DONE " + str(read_counter) + " " + str(read_counter) + " " + node + " " + str(mapperID))
 	_ = requester.recv()

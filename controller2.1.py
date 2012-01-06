@@ -350,6 +350,19 @@ while True:
 				updateMessages(msgHistory, msgScreen, f_log, logLevel, "[VENT] Ventilator done with all reads!; total reads ventilated = " + str(total_reads))
 				socket.send("ok")
 				vent_is_finished = True
+				if mappers.getNumWorking() == 0: #this is the exception case where the mappers finished before the vent
+					# send a dummy MAPPERFINISH signal to the sink via its pull socket
+					updateMessages(msgHistory, msgScreen, f_log, logLevel, "SENDING DUMMY SIGNAL")
+					tempsocket = context.socket(zmq.PUSH)
+					tempsocket.connect("tcp://" + sinkaddress + ":" + str(MAPPER2SINK_PORT))
+					tempsocket.send("0 0 0")
+					tempsocket.close()
+					updateMessages(msgHistory, msgScreen, f_log, logLevel, "... SUCCESSFUL")
+					
+					# return the cmd with SINK KILL, as in the other section
+					tempmsg = socket.recv()
+					updateMessages(msgHistory, msgScreen, f_log, logLevel, "got back: " + str(tempmsg))
+					socket.send("SINK KILL")
 			else:
 				pass
 		
@@ -439,20 +452,27 @@ while True:
 				socket.send("ok")
 				sink_is_ready = True
 			elif cmd == 'MAPPERFINISH':
-				updateMessages(msgHistory, msgScreen, f_log, logLevel, "[SINK] MAPPERFINISH received: "+ data)
-				mapperID, mappingCnt, mappedSeqCnt  = data.split(" ")
-				mappers.updateMapperTask(int(mapperID), "Done")
-				mappers.stopMapper(int(mapperID), int(mappingCnt), int(mappedSeqCnt))
-				
-				if vent_is_finished and (mappers.getNumWorking() == 0):
-					updateMessages(msgHistory, msgScreen, f_log, logLevel, "ALL MAPPERS DONE!")
-					time.sleep(10)
-					socket.send("SINK KILL")
+				if int(mapperID) != 0: #zero is a special exception, received only when SINK KILL signal is imminent.
+					updateMessages(msgHistory, msgScreen, f_log, logLevel, "[SINK] MAPPERFINISH received: "+ data)
+					mapperID, mappingCnt, mappedSeqCnt  = data.split(" ")
+					mappers.updateMapperTask(int(mapperID), "Done")
+					mappers.stopMapper(int(mapperID), int(mappingCnt), int(mappedSeqCnt))
+					
+				if mappers.getNumWorking() == 0:
+					if vent_is_finished:
+						updateMessages(msgHistory, msgScreen, f_log, logLevel, "ALL MAPPERS DONE!")
+						time.sleep(10)
+						socket.send("SINK KILL")
+					else:
+						# the mappers finished before the vent could tell the controller it is done. caveat: if the vent is NOT done but the NumWorking value is 0, this is also triggered
+						# the kill signal will be sent when the ventilator sends its finish signal
+						socket.send("ok")
 				else:
 					socket.send("ok")
 			
+			
 			elif cmd == 'FINISHED':
-				updateMessages(msgHistory, msgScreen, f_log, logLevel, "[" + str(t2-t_start) + "] " + data)
+				updateMessages(msgHistory, msgScreen, f_log, logLevel, data)
 				#updateStats(statsData, start_time, statScreen,{"sinkmappingcnt":int(data)})
 				
  				import pickle
@@ -501,7 +521,7 @@ while True:
 		elif sender == 'ERROR':
 			quitController("ERROR [" + sampleID + "] " +  message, logDirectory, job_ids, f_log, f_summary,f_univerror, f_contigs, gui)
 		elif sender == 'WARNING':
-			updateMessages(msgHistory, msgScreen, f_log, logLevel, "[" + str(t2-t_start) + "] " + message)
+			updateMessages(msgHistory, msgScreen, f_log, logLevel, "[WARNING]" + message)
 			socket.send("ok")
 		else:
 			print "unkown sender", message
