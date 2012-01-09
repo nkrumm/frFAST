@@ -97,6 +97,7 @@ if read_length == 'AUTO':
 	rc_offset_start_50 = 14
 	rc_offset_start_76 = 4
 	rc_offset_start_36 = 0
+	rc_offset_start_74 = 2
 	end_split = 72
 else:
 	read_length = int(read_length)
@@ -178,10 +179,20 @@ while not endOfFile:
 				readstreamer.send("%s.%s %s" % (read.qname, "01", seq[0:split_length]))
 				readstreamer.send("%s.%s %s" % (read.qname, "02", seq[split_length:]))	
 				read_counter += 2
+			elif read.rlen == 74:
+				seq = reverseComplement(read.seq[rc_offset_start_74:])
+				readstreamer.send("%s.%s %s" % (read.qname, "01", seq[0:split_length]))
+				readstreamer.send("%s.%s %s" % (read.qname, "02", seq[split_length:]))	
+				read_counter += 2
 			else:
+				seq = reverseComplement(read.seq[read.rlen-72:])
+				readstreamer.send("%s.%s %s" % (read.qname, "01", seq[0:split_length]))
+				readstreamer.send("%s.%s %s" % (read.qname, "02", seq[split_length:]))	
+				read_counter += 2
+				
 				# send error message
-				requester.send("WARNING VENT found non-standard read length: "  + str(read.rlen) + " -- " + str(read))
-				_ = requester.recv()
+				#requester.send("WARNING VENT found non-standard read length: "  + str(read.rlen) + " -- " + str(read))
+				#_ = requester.recv()
 				#exit(0)
 		else:
 			if read.rlen == 36:
@@ -190,7 +201,7 @@ while not endOfFile:
 			elif read.rlen == 50:
 				readstreamer.send("%s %s" % (read.qname,read.seq[0:split_length]))
 				read_counter += 1
-			elif read.rlen == 76:
+			elif read.rlen >= 72:
 				readstreamer.send("%s.%s %s" % (read.qname,"01",read.seq[0:split_length]))
 				readstreamer.send("%s.%s %s" % (read.qname,"02",read.seq[split_length:end_split]))
 				read_counter += 2

@@ -62,7 +62,7 @@ BASEFILE =  os.path.realpath(__file__)
 BASEPATH =  os.path.dirname(BASEFILE)
 
 scriptFiles= {"map":  BASEPATH + "/mrsfast_wrapper.py", "vent": BASEPATH + "/ventilator_failsafe.py", "sink": BASEPATH + "/sink5.py"}
-totalMappers = 9
+totalMappers = 12
 maximum_reads_per_destination = 1000000
 
 INDEXDIRPATH = '/net/grc/shared/scratch/nkrumm/INDEX/exome'
