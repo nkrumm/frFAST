@@ -62,7 +62,7 @@ BASEFILE =  os.path.realpath(__file__)
 BASEPATH =  os.path.dirname(BASEFILE)
 
 scriptFiles= {"map":  BASEPATH + "/mrsfast_wrapper.py", "vent": BASEPATH + "/ventilator_failsafe.py", "sink": BASEPATH + "/sink5.py"}
-totalMappers = 12
+totalMappers = 9
 maximum_reads_per_destination = 1000000
 
 INDEXDIRPATH = '/net/grc/shared/scratch/nkrumm/INDEX/exome'
@@ -482,7 +482,7 @@ while True:
 				
 				contigs = {}
 				# header line
-				f_contigs.write('mapperID\t' + '\t'.join(sorted(statsData["contigreadcnt"]['1'].iterkeys())) + "\n")
+				f_contigs.write('mapperID\t' + '\t'.join(sorted(statsData["contigreadcnt"].values()[0].iterkeys())) + "\n")
 				
 				for mapperID in sorted(statsData["contigreadcnt"].iterkeys()):
 					f_contigs.write(str(mapperID) + "\t")
