@@ -1,7 +1,7 @@
 CC=gcc
 CFLAGS = -c -O3 -g
 #LDFLAGS = -static -lz -lm
-LDPATH = -L/net/gs/vol3/software/modules-sw/zeromq/2.1.11/Linux/RHEL5/x86_64/lib/ 
+LDPATH = -L/net/gs/vol3/software/modules-sw/zeromq/2.1.11/Linux/RHEL6/x86_64/lib/ 
 LDFLAGS = -lz -lm -lzmq
 SOURCES = baseFAST.c CommandLineParser.c Common.c HashTable.c MrsFAST.c Output.c Reads.c RefGenome.c 
 OBJECTS = $(SOURCES:.c=.o)

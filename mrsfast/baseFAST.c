@@ -366,6 +366,13 @@ int main(int argc, char *argv[])
 		printf("GO ahead signal for controller!\n");
 		int r;
 		r = doMrsFAST();
+		//close all sockets, zmq will ensure that all unsent messages are sent first
+		
+		zmq_close(out_sock);
+		zmq_close(requester);
+		zmq_close(subsocket);
+		zmq_term(context);
+
 		return 1;
 	}
 }

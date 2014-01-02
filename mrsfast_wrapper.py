@@ -13,7 +13,7 @@ args = ["rsync", '-a', INDEXDIRPATH, '/var/tmp/']
 _ = subprocess.call(args)
 
 returnCode = 1
-executable = BASEPATH + '/mrsfast/mrsfast'
+executable = BASEPATH + '/mrsfast2/mrsfast'
 
 while (returnCode == 1):
 	args = [executable, '-N', controllerNode, '-P', controllerPort]

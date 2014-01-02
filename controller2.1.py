@@ -18,12 +18,14 @@ start_time = time.time()
                                ######### OPTIONS ###########
 ################################################################################################
 parser = argparse.ArgumentParser(description='This is frFAST (frankenFAST), a lightweight pipeline designed to calculate read-depth across an exome or genome using the mrsFAST mapper. \nNik Krumm, 2011')
-parser.add_argument('--source', required=True, metavar='/path/to/source_file.bam | /path/to/fastq_folder/', type=str, nargs='?',help="Source to be processed. Either a bam file or folder of gzipped-FASTQ files (files must end with .gz).")
+parser.add_argument('--source', required=True, metavar='/path/to/source_file.bam ', type=str, nargs='?',help="Source to be bam file to be mapped.")
 parser.add_argument('--output', required=True, metavar='/path/to/output_file.h5', type=str, nargs='?',help="Output location of HDF5 file")
 parser.add_argument('--log_directory','--log_dir', required=True, metavar='/path/to/log_directory', type=str, nargs='?',help="Location of log directory. Will be created if necessary.")
 parser.add_argument('--error_log', required=False, default="", metavar='/path/to/universal_error_file', type=str, nargs='?',help="Location of central error file. Output is appended to file, but file is created if necessary.")
 parser.add_argument('--sampleID', required=True, metavar='sampleID', type=str, nargs='?',help="Unique sampleID string")
-parser.add_argument('--index', metavar='/path/to/index.fa', type=str, default="/var/tmp/exome/exome_19_masked.fa", nargs='?',help="Location of index file used for mapping\n Default: /var/tmp/exome/exome_19_masked.fa")
+parser.add_argument('--index_dir', metavar='/path/to/index/folder', type=str, default="/net/grc/shared/scratch/nkrumm/INDEX/default_exome", nargs='?',help="Location of folder containing index file and index.fa which will be copied to each mapping node via rsync.")
+parser.add_argument('--index', metavar='index.fa', type=str, default="default_exome.fa", nargs='?',help="Name of the index.fa file used for mapping, must be in folder specified by index_dir \n Default: default_exome.fa")
+parser.add_argument('--translate_table', metavar='/path/to/translate_table.txt', type=str, default="/net/grc/shared/scratch/nkrumm/translate_tables/default_exome.translate.txt", nargs='?',help="Path to correct translate table used to remap exome-based coordinates to genome based coordinates. Default is based on Nimblegen V2 capture.")
 parser.add_argument('--port','-p', metavar='8000', type=int, nargs="?", default = 8000,\
 	help="TCP port offset to use. Will use FOUR CONSECUTIVE ports starting with this value. Default port range: 8000-8004")
 parser.add_argument('--disable_port_scan',action='store_true',\
@@ -31,7 +33,7 @@ parser.add_argument('--disable_port_scan',action='store_true',\
 parser.add_argument('--disable_gui',action='store_true',\
 	help="Disable dashboard GUI for running in batch/SGE")
 parser.add_argument('--timeout','-t', metavar='3600', type=int, nargs="?", default = 0,\
-	help="Maximum timeout before aborting current sample. Default is no timeout. SGE queue time is not included in this.")
+	help="Maximum idle timeout before aborting current sample. Default is no timeout. SGE queue time is not included in this.")
 
 args = parser.parse_args()
 if args.disable_gui:
@@ -47,25 +49,29 @@ sink_outfile = args.output #"/net/grc/shared/scratch/nkrumm/ESP2000/HDF5/" + sam
 split_length = 36 # only 36 is currently supported!
 read_length = 'AUTO'
 
-# Todo-- check if this exists on cluster nodes
+# set up index location information
 indexFile = args.index #"/var/tmp/exome/exome_19_masked.fa"
+INDEXDIRPATH = "/" + args.index_dir.strip("/")
+folder = INDEXDIRPATH.split("/")[-1]
+index_on_node_location = "/var/tmp/" + folder + "/" + indexFile
 
-#TODO: edit distance
+# translation table to be sent to sink
+translate_table_fn = args.translate_table
 
 logLevel = 1 # 1: log messages to file,  0: no logging TODO: turn off/on SGE logs.
 logDirectory = args.log_directory + "/" #"/net/grc/shared/scratch/nkrumm/ESP2000/Logs/" + sampleID + "/"
 
 job_names = {"map": "map" + sampleID, "vent": "vent" + sampleID, "sink": "sink" + sampleID}
-mem_requested = {"mapper": "1500M", "vent": "500M", "sink": "2G"}
+mem_requested = {"mapper": "1500M", "vent": "2G", "sink": "3G"}
 
 BASEFILE =  os.path.realpath(__file__)
 BASEPATH =  os.path.dirname(BASEFILE)
 
-scriptFiles= {"map":  BASEPATH + "/mrsfast_wrapper.py", "vent": BASEPATH + "/ventilator_failsafe.py", "sink": BASEPATH + "/sink5.py"}
-totalMappers = 9
+scriptFiles= {"map":  BASEPATH + "/mrsfast_wrapper.py", "vent": BASEPATH + "/ventilator_failsafe3.py", "sink": BASEPATH + "/sink7.py"}
+#scriptFiles= {"map":  BASEPATH + "/mrsfast_wrapper.py", "vent": BASEPATH + "/ventilator_downsampler.py", "sink": BASEPATH + "/sink7.py"}
+totalMappers = 8
 maximum_reads_per_destination = 1000000
 
-INDEXDIRPATH = '/net/grc/shared/scratch/nkrumm/INDEX/exome'
 
 ################################################################################################
 ################################################################################################
@@ -149,8 +155,8 @@ qsub_cmd = {}
 vent_is_ready = False
 vent_is_finished = False
 
-tempscript = writeQSubFile("module load samtools\n python "+scriptFiles["vent"]+" " + controllerNodeName+" " + str(REQ_REP_PORT))
-qsub_cmd["vent"] = "qsub -q prod.q -pe serial 2 -l h_vmem=%s -S /bin/bash -cwd -o %s -e %s -N %s -j y %s" % (mem_requested["vent"], logDirectory, logDirectory,job_names["vent"], tempscript.name)
+tempscript = writeQSubFile("module load samtools/latest python/2.7.2 numpy/1.6.1\n python "+scriptFiles["vent"]+" " + controllerNodeName+" " + str(REQ_REP_PORT))
+qsub_cmd["vent"] = "qsub -pe serial 2 -l h_vmem=%s -l rhel=6 -l h='e11[0-9]|e10[0-9]|e[0-9][0-9]' -S /bin/bash -cwd -o %s -e %s -N %s -j y %s" % (mem_requested["vent"], logDirectory, logDirectory,job_names["vent"], tempscript.name)
 output,e = submitQSub(qsub_cmd["vent"])
 job_ids["vent"] = output.split(" ")[2]
 vent_time = 0
@@ -160,8 +166,8 @@ vent_time = 0
 #
 sink_is_ready = False
 
-tempscript = writeQSubFile("module load zlib hdf5/1.8.4\n python "+scriptFiles["sink"]+" " + controllerNodeName+" " + str(REQ_REP_PORT))
-qsub_cmd["sink"] = "qsub -q prod.q -pe serial 2 -l h_vmem=%s -S /bin/bash -cwd -o %s -e %s -N %s -j y %s" % (mem_requested["sink"], logDirectory, logDirectory,job_names["sink"], tempscript.name)
+tempscript = writeQSubFile("module load zlib/latest hdf5/1.8.4 python/2.7.2 numpy/1.6.1\n python "+scriptFiles["sink"]+" " + controllerNodeName+" " + str(REQ_REP_PORT))
+qsub_cmd["sink"] = "qsub -pe serial 2 -l h_vmem=%s -l rhel=6 -S /bin/bash -cwd -o %s -e %s -N %s -j y %s" % (mem_requested["sink"], logDirectory, logDirectory,job_names["sink"], tempscript.name)
 output,e = submitQSub(qsub_cmd["sink"])
 job_ids["sink"] = output.split(" ")[2]
 
@@ -212,8 +218,10 @@ else:
 updateScreen(screen, mappers.mappers)
 updateMessages(msgHistory, msgScreen, f_log, logLevel, "[INFO] Controller running on: " + controllerNodeName)
 updateMessages(msgHistory, msgScreen, f_log, logLevel, "[INFO] ZMQ library version: " + str(zmq.__version__))
+updateMessages(msgHistory, msgScreen, f_log, logLevel, "[INFO] Will be using index in: " + INDEXDIRPATH)
 updateMessages(msgHistory, msgScreen, f_log, logLevel, "[INFO] Using index: " + indexFile)
 updateMessages(msgHistory, msgScreen, f_log, logLevel, "[INFO] Using source: " + source_filename)
+updateMessages(msgHistory, msgScreen, f_log, logLevel, "[INFO] Index on node is at: " + index_on_node_location)
 updateMessages(msgHistory, msgScreen, f_log, logLevel, "[INFO] Setting as sink output file: " + sink_outfile)
 updateMessages(msgHistory, msgScreen, f_log, logLevel, "[INFO] Vent script location: " + scriptFiles["vent"])
 updateMessages(msgHistory, msgScreen, f_log, logLevel, "[INFO] Submitted vent job: " + qsub_cmd["vent"])
@@ -239,7 +247,7 @@ while True:
 			
 			tempscript = writeQSubFile("python " + scriptFiles["map"] + " " + controllerNodeName+" " + str(REQ_REP_PORT) + " " + BASEPATH + " " + INDEXDIRPATH)
 			
-			qsub_cmd = "qsub -l h_vmem=%s -q all.q,prod.q -t 1-%d -S /bin/bash -cwd -o %s -e %s -N %s -j y %s" % (mem_requested["mapper"], mappers.numMappers, logDirectory, logDirectory,job_names["map"],tempscript.name)
+			qsub_cmd = "qsub -l h_vmem=%s -l rhel=6 -t 1-%d -S /bin/bash -cwd -o %s -e %s -N %s -j y %s" % (mem_requested["mapper"], mappers.numMappers, logDirectory, logDirectory,job_names["map"],tempscript.name)
 			output,e = submitQSub(qsub_cmd)
 			#print output,e
 			job_array = output.split(" ")[2]
@@ -375,7 +383,7 @@ while True:
 				mapperID = mappers.registerMapper(data) # registerMapper(data) 
 				socket.send(str(mapperID))
 			elif cmd == 'GETINDEX':
-				socket.send(indexFile)
+				socket.send(index_on_node_location)
 			elif cmd == 'GETSINKADDRESS':
 				socket.send("tcp://" + sinkaddress + ":" + str(MAPPER2SINK_PORT))
 			elif cmd == 'GETVENTADDRESS':
@@ -406,7 +414,7 @@ while True:
 						socket.send("WAIT")
 					else: # everything is OK and the mapper can proceed
 						socket.send("OK")
-						
+			
 			elif cmd == 'UPDATE':
 				#updateMessages(msgHistory, msgScreen, f_log, logLevel, "UPDATE received: "+ data)
 				mapperID, contig, mappingCnt, mappedSeqCnt = data.split(" ")
@@ -447,6 +455,9 @@ while True:
 			elif cmd == 'GETSAMPLEINFO':
 				updateMessages(msgHistory, msgScreen, f_log, logLevel, "[SINK] Sending sample info to sink: " + sink_outfile + " " + sampleID)
 				socket.send(sink_outfile + " " + sampleID)
+			elif cmd == 'GETTRANSLATETABLE':
+				updateMessages(msgHistory, msgScreen, f_log, logLevel, "[SINK] Sending translate table to sink: " + translate_table_fn)
+				socket.send(translate_table_fn)
 			elif cmd == 'READY':
 				updateMessages(msgHistory, msgScreen, f_log, logLevel, "[SINK] Sink ready!")
 				socket.send("ok")

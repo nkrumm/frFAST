@@ -13,7 +13,7 @@ import mapper
 def scanPorts():
 	import subprocess
 	import re	
-	cmd = "/opt/c3-4/cexec netstat -vatn"
+	cmd = "cexec netstat -vatn"
 	args =  cmd.split(" ")
 	output,error = subprocess.Popen(args,stdout = subprocess.PIPE, stderr= subprocess.PIPE).communicate()
 	ports = []
@@ -58,9 +58,14 @@ def updateScreen(screen,mappers):
 		screen.addstr(2,3,"mapperID\tnode\tstatus\ttask\trank")
 		row = 0
 		for _mapper in mappers.values():
-			wstr = "Working" if _mapper["working"] else "Free"
-			screen.addstr(3+row,3,str(_mapper["mapperID"]) + "\t\t" + str(_mapper["node"]) + "\t" + wstr + "\t" + str(_mapper["task"]) + "\t" + str(_mapper["rank"]))
-			row += 1
+			if row < 12:
+				wstr = "Working" if _mapper["working"] else "Free"
+				screen.addstr(3+row,3,str(_mapper["mapperID"]) + "\t\t" + str(_mapper["node"]) + "\t" + wstr + "\t" + str(_mapper["task"]) + "\t" + str(_mapper["rank"]))
+				row += 1
+			else:
+				screen.addstr(4+row,3,"...")
+				break
+		
 		screen.refresh()
 
 def updateMessages(msgHistory, screen, f_log, logLevel, msg):
