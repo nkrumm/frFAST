@@ -5,3 +5,5 @@
 
 *.pyc
 old/
+*.sublime-workspace
+*.sublime-project
