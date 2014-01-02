@@ -15,7 +15,7 @@ from controller_funcs import scanPorts, writeQSubFile, submitQSub, deleteQSub, l
 
 start_time = time.time()
 ################################################################################################
-                               ######### OPTIONS ###########
+							   ######### OPTIONS ###########
 ################################################################################################
 parser = argparse.ArgumentParser(description='This is frFAST (frankenFAST), a lightweight pipeline designed to calculate read-depth across an exome or genome using the mrsFAST mapper. \nNik Krumm, 2011')
 parser.add_argument('--source', required=True, metavar='/path/to/source_file.bam ', type=str, nargs='?',help="Source to be bam file to be mapped.")
@@ -34,6 +34,9 @@ parser.add_argument('--disable_gui',action='store_true',\
 	help="Disable dashboard GUI for running in batch/SGE")
 parser.add_argument('--timeout','-t', metavar='3600', type=int, nargs="?", default = 0,\
 	help="Maximum idle timeout before aborting current sample. Default is no timeout. SGE queue time is not included in this.")
+parser.add_argument('--single-host',action='store_true',\
+	help="Run using localhost/tcp-loopback only; Disables SGE queue submission and runs mappers/sinks/vents using subprocesses!")
+parser.add_argument('--n-mappers',default=8, help="Number of mapping jobs") 
 
 args = parser.parse_args()
 if args.disable_gui:
@@ -69,7 +72,7 @@ BASEPATH =  os.path.dirname(BASEFILE)
 
 scriptFiles= {"map":  BASEPATH + "/mrsfast_wrapper.py", "vent": BASEPATH + "/ventilator_failsafe3.py", "sink": BASEPATH + "/sink7.py"}
 #scriptFiles= {"map":  BASEPATH + "/mrsfast_wrapper.py", "vent": BASEPATH + "/ventilator_downsampler.py", "sink": BASEPATH + "/sink7.py"}
-totalMappers = 8
+totalMappers = args.n_mappers
 maximum_reads_per_destination = 1000000
 
 
@@ -105,7 +108,7 @@ statsData["contigreadcnt"] = {}
 
 ############################
 
-if not args.disable_port_scan:
+if (not args.disable_port_scan) and (not args.single_host):
 	print "Scanning ports on cluster..."
 	ports = scanPorts()
 	
@@ -121,10 +124,14 @@ MAPPER2SINK_PORT = tcpPortIndex + 3 #:6000
 
 #############################
 def SIGINT_handler(signal, frame):
-	print 'EXITING with return code 1! Killing qsub jobs:'
-	for jobID in job_ids.values():
-		o,e = deleteQSub(jobID)
-		print o
+	if args.single_host:
+		# TODO
+
+	else:
+		print 'EXITING with return code 1! Killing qsub jobs:'
+		for jobID in job_ids.values():
+			o,e = deleteQSub(jobID)
+			print o
 	if gui:
 		curses.endwin()
 	sys.exit(1)
@@ -142,7 +149,10 @@ pubsocket.bind("tcp://*:" + str(PUB_SUB_PORT))
 
 signal.signal(signal.SIGINT, SIGINT_handler) # handle Ctrl-C gracefully
 
-controllerNodeName = os.uname()[1].split(".")[0] #own hostname
+if args.single_host:
+	controllerNodeName = "localhost"
+else:
+	controllerNodeName = os.uname()[1].split(".")[0] #own hostname
 mappers_started = False
 
 job_ids = {}
@@ -155,21 +165,27 @@ qsub_cmd = {}
 vent_is_ready = False
 vent_is_finished = False
 
-tempscript = writeQSubFile("module load samtools/latest python/2.7.2 numpy/1.6.1\n python "+scriptFiles["vent"]+" " + controllerNodeName+" " + str(REQ_REP_PORT))
-qsub_cmd["vent"] = "qsub -pe serial 2 -l h_vmem=%s -l rhel=6 -l h='e11[0-9]|e10[0-9]|e[0-9][0-9]' -S /bin/bash -cwd -o %s -e %s -N %s -j y %s" % (mem_requested["vent"], logDirectory, logDirectory,job_names["vent"], tempscript.name)
-output,e = submitQSub(qsub_cmd["vent"])
-job_ids["vent"] = output.split(" ")[2]
-vent_time = 0
+if args.single_host:
+	# TODO
+	subprocess.call("python " + scriptFiles["vent"]+" " + controllerNodeName+" " + str(REQ_REP_PORT)))
+else:
+	tempscript = writeQSubFile("module load samtools/latest python/2.7.2 numpy/1.6.1\n python "+scriptFiles["vent"]+" " + controllerNodeName+" " + str(REQ_REP_PORT))
+	qsub_cmd["vent"] = "qsub -pe serial 2 -l h_vmem=%s -l rhel=6 -l h='e11[0-9]|e10[0-9]|e[0-9][0-9]' -S /bin/bash -cwd -o %s -e %s -N %s -j y %s" % (mem_requested["vent"], logDirectory, logDirectory,job_names["vent"], tempscript.name)
+	output,e = submitQSub(qsub_cmd["vent"])
+	job_ids["vent"] = output.split(" ")[2]
+	vent_time = 0
 
 #############################
 # START SINK
 #
 sink_is_ready = False
-
-tempscript = writeQSubFile("module load zlib/latest hdf5/1.8.4 python/2.7.2 numpy/1.6.1\n python "+scriptFiles["sink"]+" " + controllerNodeName+" " + str(REQ_REP_PORT))
-qsub_cmd["sink"] = "qsub -pe serial 2 -l h_vmem=%s -l rhel=6 -S /bin/bash -cwd -o %s -e %s -N %s -j y %s" % (mem_requested["sink"], logDirectory, logDirectory,job_names["sink"], tempscript.name)
-output,e = submitQSub(qsub_cmd["sink"])
-job_ids["sink"] = output.split(" ")[2]
+if args.single_host:
+	subprocess.call("python " + scriptFiles["sink"]+" " + controllerNodeName+" " + str(REQ_REP_PORT))
+else:
+	tempscript = writeQSubFile("module load zlib/latest hdf5/1.8.4 python/2.7.2 numpy/1.6.1\n python "+scriptFiles["sink"]+" " + controllerNodeName+" " + str(REQ_REP_PORT))
+	qsub_cmd["sink"] = "qsub -pe serial 2 -l h_vmem=%s -l rhel=6 -S /bin/bash -cwd -o %s -e %s -N %s -j y %s" % (mem_requested["sink"], logDirectory, logDirectory,job_names["sink"], tempscript.name)
+	output,e = submitQSub(qsub_cmd["sink"])
+	job_ids["sink"] = output.split(" ")[2]
 
 ####
 # SET UP MAPPERS and job details
@@ -244,21 +260,25 @@ while True:
 	if sink_is_ready and vent_is_ready:
 		if not mappers_started:
 			# START ZE MAPPERS!
-			
-			tempscript = writeQSubFile("python " + scriptFiles["map"] + " " + controllerNodeName+" " + str(REQ_REP_PORT) + " " + BASEPATH + " " + INDEXDIRPATH)
-			
-			qsub_cmd = "qsub -l h_vmem=%s -l rhel=6 -t 1-%d -S /bin/bash -cwd -o %s -e %s -N %s -j y %s" % (mem_requested["mapper"], mappers.numMappers, logDirectory, logDirectory,job_names["map"],tempscript.name)
-			output,e = submitQSub(qsub_cmd)
-			#print output,e
-			job_array = output.split(" ")[2]
-			job_id = job_array.split(".")[0]
-			job_ids["mappers"] = job_id
-			job_name = output.split(" ")[3][2:-2] # get the job name only from '("jobname")'
-			
-			updateMessages(msgHistory, msgScreen, f_log, logLevel,  "#### STARTED MAPPERS ####")
-			updateMessages(msgHistory, msgScreen, f_log, logLevel,  "job_array is: " + str(job_array))
-			updateMessages(msgHistory, msgScreen, f_log, logLevel,  "job_id is: " + str(job_id))
-			updateMessages(msgHistory, msgScreen, f_log, logLevel,  "job_name is: " + str(job_name))
+			if args.single_host:
+				# TODO
+				# TODO
+				# TODO
+			else:
+				tempscript = writeQSubFile("python " + scriptFiles["map"] + " " + controllerNodeName+" " + str(REQ_REP_PORT) + " " + BASEPATH + " " + INDEXDIRPATH)
+				
+				qsub_cmd = "qsub -l h_vmem=%s -l rhel=6 -t 1-%d -S /bin/bash -cwd -o %s -e %s -N %s -j y %s" % (mem_requested["mapper"], mappers.numMappers, logDirectory, logDirectory,job_names["map"],tempscript.name)
+				output,e = submitQSub(qsub_cmd)
+				#print output,e
+				job_array = output.split(" ")[2]
+				job_id = job_array.split(".")[0]
+				job_ids["mappers"] = job_id
+				job_name = output.split(" ")[3][2:-2] # get the job name only from '("jobname")'
+				
+				updateMessages(msgHistory, msgScreen, f_log, logLevel,  "#### STARTED MAPPERS ####")
+				updateMessages(msgHistory, msgScreen, f_log, logLevel,  "job_array is: " + str(job_array))
+				updateMessages(msgHistory, msgScreen, f_log, logLevel,  "job_id is: " + str(job_id))
+				updateMessages(msgHistory, msgScreen, f_log, logLevel,  "job_name is: " + str(job_name))
 			
 			mappers_started = True
 	
@@ -376,7 +396,7 @@ while True:
 		
 		##################
 		# MAPPER
-		#	
+		#   
 		elif sender == 'MAPPER':
 			if cmd == 'REGISTER':
 				# should get the hostname here and register
@@ -451,7 +471,7 @@ while True:
 				socket.send("ok")
 				if gui:
 					infoScreen.addstr(6,3,"Sink Node: " + str(sinkaddress))
-					infoScreen.refresh()				
+					infoScreen.refresh()                
 			elif cmd == 'GETSAMPLEINFO':
 				updateMessages(msgHistory, msgScreen, f_log, logLevel, "[SINK] Sending sample info to sink: " + sink_outfile + " " + sampleID)
 				socket.send(sink_outfile + " " + sampleID)
@@ -486,10 +506,10 @@ while True:
 				updateMessages(msgHistory, msgScreen, f_log, logLevel, data)
 				#updateStats(statsData, start_time, statScreen,{"sinkmappingcnt":int(data)})
 				
- 				import pickle
- 				f=open(logDirectory + "/statsData.pickle",'w')
- 				pickle.dump(statsData,f)
- 				f.close()
+				import pickle
+				f=open(logDirectory + "/statsData.pickle",'w')
+				pickle.dump(statsData,f)
+				f.close()
 				
 				contigs = {}
 				# header line
@@ -520,8 +540,11 @@ while True:
 				f_summary.close()
 				updateMessages(msgHistory, msgScreen, f_log, logLevel, "FINISHED. Terminating all mapping jobs and ventilator.")
 				
-				o,e = deleteQSub(job_ids["mappers"])
-				o,e = deleteQSub(job_ids["vent"])				
+				if args.single_host:
+					# Stop jobs here
+				else:
+					o,e = deleteQSub(job_ids["mappers"])
+					o,e = deleteQSub(job_ids["vent"])               
 				if gui:
 					curses.endwin()
 				
