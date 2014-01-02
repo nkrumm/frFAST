@@ -3,17 +3,10 @@
 # module load hdf5/1.8.4 (or 1.8.2 on some nodes)
 
 import numpy as np
-import math
-import operator
-import random
 import time
 import sys
-import itertools
-import re
 import os
 from tables import *
-from collections import defaultdict
-from subprocess import Popen, PIPE
 
 print sys.version
 
@@ -41,7 +34,10 @@ print "Will be using port %d as mapper-->sink port" % MAPPER2SINK_PORT
 requester = context.socket(zmq.REQ);
 requester.connect("tcp://" + controlleraddress + ":" + str(controllerport))
 
-nodeaddress = os.uname()[1]
+if controlleraddress == "localhost":
+    nodeaddress = "localhost"
+else:
+    nodeaddress = os.uname()[1]
 
 requester.send("SINK REGISTER " + nodeaddress)
 _ = requester.recv()

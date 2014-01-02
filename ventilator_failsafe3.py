@@ -39,7 +39,10 @@ except zmq.core.error.ZMQError:
     print "ERROR VENT controller port not available!"
     sys.exit(0)
 
-nodeaddress = os.uname()[1]
+if controlleraddress == "localhost":
+    nodeaddress = "localhost"
+else:
+    nodeaddress = os.uname()[1]
 
 requester.send("VENT REGISTER " + nodeaddress)
 _ = requester.recv()
