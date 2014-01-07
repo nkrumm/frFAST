@@ -10,11 +10,12 @@ if __name__ == '__main__':
     parser.add_argument("controllerPort")
     parser.add_argument("BASEPATH")
     parser.add_argument("INDEXDIRPATH", required=False, default=None)
+    parser.add_argument("--temp", required=False, default='/var/tmp/')
     args = parser.parse_args()
     # rsync code
 
     if args.INDEXDIRPATH:
-        args = ["rsync", '-a', args.INDEXDIRPATH, '/var/tmp/']
+        args = ["rsync", '-a', args.INDEXDIRPATH, args.temp]
         _ = subprocess.call(args)
 
     returnCode = 1
