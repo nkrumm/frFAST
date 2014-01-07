@@ -1,21 +1,26 @@
 import sys
 import os
 import subprocess
+import argparse
 
 
-controllerNode = sys.argv[1]
-controllerPort = sys.argv[2]
-BASEPATH  = sys.argv[3]
-INDEXDIRPATH = sys.argv[4]
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument("controllerNode")
+    parser.add_argument("controllerPort")
+    parser.add_argument("BASEPATH")
+    parser.add_argument("INDEXDIRPATH", required=False, default=None)
+    args = parser.parse_args()
+    # rsync code
 
-# rsync code
-args = ["rsync", '-a', INDEXDIRPATH, '/var/tmp/']
-_ = subprocess.call(args)
+    if args.INDEXDIRPATH:
+        args = ["rsync", '-a', args.INDEXDIRPATH, '/var/tmp/']
+        _ = subprocess.call(args)
 
-returnCode = 1
-executable = BASEPATH + '/mrsfast2/mrsfast'
+    returnCode = 1
+    executable = args.BASEPATH + '/mrsfast2/mrsfast'
 
-while (returnCode == 1):
-    args = [executable, '-N', controllerNode, '-P', controllerPort]
-    returnCode = subprocess.call(args)
+    args = [executable, '-N', args.controllerNode, '-P', args.controllerPort]
 
+    while (returnCode == 1):    
+        returnCode = subprocess.call(args)
