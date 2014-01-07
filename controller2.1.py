@@ -2,9 +2,6 @@
 import argparse
 import zmq
 import time
-import operator
-import numpy as np
-import tempfile
 import os
 import subprocess
 import sys
