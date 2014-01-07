@@ -51,10 +51,15 @@ split_length = 36 # only 36 is currently supported!
 read_length = 'AUTO'
 
 # set up index location information
-indexFile = args.index #"/var/tmp/exome/exome_19_masked.fa"
-INDEXDIRPATH = "/" + args.index_dir.strip("/")
-folder = INDEXDIRPATH.split("/")[-1]
-index_on_node_location = "/var/tmp/" + folder + "/" + indexFile
+if args.dont_rsync_index:
+    indexFile = args.index
+    index_on_node_location = os.path.join(args.index_dir, args.index)
+    INDEXDIRPATH = ""
+else:
+    indexFile = args.index #"/var/tmp/exome/exome_19_masked.fa"
+    INDEXDIRPATH = "/" + args.index_dir.strip("/")
+    folder = INDEXDIRPATH.split("/")[-1]
+    index_on_node_location = "/var/tmp/" + folder + "/" + indexFile
 
 # translation table to be sent to sink
 translate_table_fn = args.translate_table
@@ -123,8 +128,7 @@ MAPPER2SINK_PORT = tcpPortIndex + 3 #:6000
 #############################
 def SIGINT_handler(signal, frame):
     if args.single_host:
-        # TODO
-
+        print 'EXITING with return code 1!'
     else:
         print 'EXITING with return code 1! Killing qsub jobs:'
         for jobID in job_ids.values():
@@ -164,8 +168,9 @@ vent_is_ready = False
 vent_is_finished = False
 
 if args.single_host:
-    # TODO
-    subprocess.call("python " + scriptFiles["vent"]+" " + controllerNodeName+" " + str(REQ_REP_PORT)))
+    qsub_cmd["vent"] = "python %s %s %d" % (scriptFiles["vent"], controllerNodeName, REQ_REP_PORT)
+    p = subprocess.Popen(qsub_cmd["vent"], shell=True)
+    job_ids["vent"] = p.pid
 else:
     tempscript = writeQSubFile("module load samtools/latest python/2.7.2 numpy/1.6.1\n python "+scriptFiles["vent"]+" " + controllerNodeName+" " + str(REQ_REP_PORT))
     qsub_cmd["vent"] = "qsub -pe serial 2 -l h_vmem=%s -l rhel=6 -l h='e11[0-9]|e10[0-9]|e[0-9][0-9]' -S /bin/bash -cwd -o %s -e %s -N %s -j y %s" % (mem_requested["vent"], logDirectory, logDirectory,job_names["vent"], tempscript.name)
@@ -178,8 +183,9 @@ else:
 #
 sink_is_ready = False
 if args.single_host:
-    #TODO
-    subprocess.call("python " + scriptFiles["sink"]+" " + controllerNodeName+" " + str(REQ_REP_PORT))
+    qsub_cmd["sink"] = "python %s %s %d" % (scriptFiles["sink"], controllerNodeName, REQ_REP_PORT)
+    p = subprocess.Popen(qsub_cmd["sink"], shell=True)
+    job_ids["sink"] = p.pid
 else:
     tempscript = writeQSubFile("module load zlib/latest hdf5/1.8.4 python/2.7.2 numpy/1.6.1\n python "+scriptFiles["sink"]+" " + controllerNodeName+" " + str(REQ_REP_PORT))
     qsub_cmd["sink"] = "qsub -pe serial 2 -l h_vmem=%s -l rhel=6 -S /bin/bash -cwd -o %s -e %s -N %s -j y %s" % (mem_requested["sink"], logDirectory, logDirectory,job_names["sink"], tempscript.name)
@@ -254,17 +260,25 @@ while True:
         if time.time() - time_last_msg  >= args.timeout:
             if sink_is_ready and vent_is_ready and mappers_started:
                 error_msg = "ERROR [%s] Timeout Exceeded!" % sampleID
-                quitController(error_msg, logDirectory, job_ids, f_log, f_summary, f_univerror, f_contigs, gui)
+                quitController(error_msg, logDirectory, job_ids, f_log, f_summary, f_univerror, f_contigs, gui, args.single_host)
     
     if sink_is_ready and vent_is_ready:
         if not mappers_started:
             # START ZE MAPPERS!
             if args.single_host:
-                # TODO
-                # TODO
-                # TODO
+                qsub_cmd["mappers"] = "python %s %s %d %s" % (scriptFiles["map"], controllerNodeName, REQ_REP_PORT, BASEPATH)
+                pids = []
+                for i in range(mappers.numMappers):
+                    p = subprocess.Popen(qsub_cmd["mappers"], shell=True)
+                    pids.append(p.pid)
+                job_ids["mappers"] = pids
+                updateMessages(msgHistory, msgScreen, f_log, logLevel,  "#### STARTED MAPPERS ####")
+                updateMessages(msgHistory, msgScreen, f_log, logLevel,  "job_ids are: %s" % ", ".join(job_ids["mappers"]))
             else:
-                tempscript = writeQSubFile("python " + scriptFiles["map"] + " " + controllerNodeName+" " + str(REQ_REP_PORT) + " " + BASEPATH + " " + INDEXDIRPATH)
+                if args.dont_rsync_index:
+                    tempscript = writeQSubFile("python " + scriptFiles["map"] + " " + controllerNodeName+" " + str(REQ_REP_PORT) + " " + BASEPATH)
+                else:
+                    tempscript = writeQSubFile("python " + scriptFiles["map"] + " " + controllerNodeName+" " + str(REQ_REP_PORT) + " " + BASEPATH + " " + INDEXDIRPATH)
                 
                 qsub_cmd = "qsub -l h_vmem=%s -l rhel=6 -t 1-%d -S /bin/bash -cwd -o %s -e %s -N %s -j y %s" % (mem_requested["mapper"], mappers.numMappers, logDirectory, logDirectory,job_names["map"],tempscript.name)
                 output,e = submitQSub(qsub_cmd)
@@ -539,9 +553,7 @@ while True:
                 f_summary.close()
                 updateMessages(msgHistory, msgScreen, f_log, logLevel, "FINISHED. Terminating all mapping jobs and ventilator.")
                 
-                if args.single_host:
-                    # Stop jobs here
-                else:
+                if not args.single_host:
                     o,e = deleteQSub(job_ids["mappers"])
                     o,e = deleteQSub(job_ids["vent"])               
                 if gui:
@@ -552,7 +564,7 @@ while True:
                 sys.exit(0)
         
         elif sender == 'ERROR':
-            quitController("ERROR [" + sampleID + "] " +  message, logDirectory, job_ids, f_log, f_summary,f_univerror, f_contigs, gui)
+            quitController("ERROR [" + sampleID + "] " +  message, logDirectory, job_ids, f_log, f_summary,f_univerror, f_contigs, gui, args.single_host)
         elif sender == 'WARNING':
             updateMessages(msgHistory, msgScreen, f_log, logLevel, "[WARNING]" + message)
             socket.send("ok")
