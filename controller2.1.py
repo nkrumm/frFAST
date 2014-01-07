@@ -24,6 +24,7 @@ parser.add_argument('--log_directory','--log_dir', required=True, metavar='/path
 parser.add_argument('--error_log', required=False, default="", metavar='/path/to/universal_error_file', type=str, nargs='?',help="Location of central error file. Output is appended to file, but file is created if necessary.")
 parser.add_argument('--sampleID', required=True, metavar='sampleID', type=str, nargs='?',help="Unique sampleID string")
 parser.add_argument('--index_dir', metavar='/path/to/index/folder', type=str, default="/net/grc/shared/scratch/nkrumm/INDEX/default_exome", nargs='?',help="Location of folder containing index file and index.fa which will be copied to each mapping node via rsync.")
+parser.add_argument('--dont-rsync-index', action="store_true", default=False, help="Do not use rsync to copy mrsFAST index to node (--index_dir should point to accessible index in this case)")
 parser.add_argument('--index', metavar='index.fa', type=str, default="default_exome.fa", nargs='?',help="Name of the index.fa file used for mapping, must be in folder specified by index_dir \n Default: default_exome.fa")
 parser.add_argument('--translate_table', metavar='/path/to/translate_table.txt', type=str, default="/net/grc/shared/scratch/nkrumm/translate_tables/default_exome.translate.txt", nargs='?',help="Path to correct translate table used to remap exome-based coordinates to genome based coordinates. Default is based on Nimblegen V2 capture.")
 parser.add_argument('--port','-p', metavar='8000', type=int, nargs="?", default = 8000,\
