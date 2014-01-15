@@ -247,10 +247,10 @@ updateMessages(msgHistory, msgScreen, f_log, logLevel, "[INFO] Index on node is 
 updateMessages(msgHistory, msgScreen, f_log, logLevel, "[INFO] Setting as sink output file: " + sink_outfile)
 updateMessages(msgHistory, msgScreen, f_log, logLevel, "[INFO] Vent script location: " + scriptFiles["vent"])
 updateMessages(msgHistory, msgScreen, f_log, logLevel, "[INFO] Submitted vent job: " + qsub_cmd["vent"])
-updateMessages(msgHistory, msgScreen, f_log, logLevel, "[INFO] SGE Job id for vent: " + job_ids["vent"])
+updateMessages(msgHistory, msgScreen, f_log, logLevel, "[INFO] SGE Job id for vent: " + str(job_ids["vent"]))
 updateMessages(msgHistory, msgScreen, f_log, logLevel, "[INFO] Sink script location: " + scriptFiles["sink"])
 updateMessages(msgHistory, msgScreen, f_log, logLevel, "[INFO] Submitted sink job: " + qsub_cmd["sink"])
-updateMessages(msgHistory, msgScreen, f_log, logLevel, "[INFO] SGE Job id for sink: " + job_ids["sink"])
+updateMessages(msgHistory, msgScreen, f_log, logLevel, "[INFO] SGE Job id for sink: " + str(job_ids["sink"]))
 updateMessages(msgHistory, msgScreen, f_log, logLevel, "[INFO] Attempting to register " + str(totalMappers) + " mapping jobs")
 updateMessages(msgHistory, msgScreen, f_log, logLevel, "[INFO] mem_requested per mapper set to " + mem_requested["mapper"] + " mapping jobs")
 
@@ -274,19 +274,19 @@ while True:
                     pids.append(p.pid)
                 job_ids["mappers"] = pids
                 updateMessages(msgHistory, msgScreen, f_log, logLevel,  "#### STARTED MAPPERS ####")
-                updateMessages(msgHistory, msgScreen, f_log, logLevel,  "job_ids are: %s" % ", ".join(job_ids["mappers"]))
+                #updateMessages(msgHistory, msgScreen, f_log, logLevel,  "job_ids are: %s" % ", ".join(job_ids["mappers"]))
             else:
                 if args.dont_rsync_index:
                     tempscript = writeQSubFile("python " + scriptFiles["map"] + " " + controllerNodeName+" " + str(REQ_REP_PORT) + " " + BASEPATH)
                 else:
-                    tempscript = writeQSubFile("python " + scriptFiles["map"] + " " + controllerNodeName+" " + str(REQ_REP_PORT) + " " + BASEPATH + " " + INDEXDIRPATH)
+                    tempscript = writeQSubFile("python " + scriptFiles["map"] + " " + controllerNodeName+" " + str(REQ_REP_PORT) + " " + BASEPATH + " --index-dir " + INDEXDIRPATH)
                 
                 qsub_cmd = "qsub -l h_vmem=%s -l rhel=6 -t 1-%d -S /bin/bash -cwd -o %s -e %s -N %s -j y %s" % (mem_requested["mapper"], mappers.numMappers, logDirectory, logDirectory,job_names["map"],tempscript.name)
                 output,e = submitQSub(qsub_cmd)
                 #print output,e
                 job_array = output.split(" ")[2]
                 job_id = job_array.split(".")[0]
-                job_ids["mappers"] = job_id
+                job_ids["mappers"] = [str(job_id)]
                 job_name = output.split(" ")[3][2:-2] # get the job name only from '("jobname")'
                 
                 updateMessages(msgHistory, msgScreen, f_log, logLevel,  "#### STARTED MAPPERS ####")

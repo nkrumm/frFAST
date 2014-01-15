@@ -23,11 +23,11 @@ context = zmq.Context(8)
 controlleraddress = sys.argv[1]
 controllerport = int(sys.argv[2])
 
-print "Connecting to controller @ " +str(controlleraddress) + ":" + str(controllerport)
+print "[SINK] Connecting to controller @ " +str(controlleraddress) + ":" + str(controllerport)
 
 MAPPER2SINK_PORT = controllerport +3 #formerly  :6000
 
-print "Will be using port %d as mapper-->sink port" % MAPPER2SINK_PORT
+print "[SINK] Will be using port %d as mapper-->sink port" % MAPPER2SINK_PORT
 
 
 
