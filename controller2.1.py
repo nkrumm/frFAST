@@ -26,6 +26,7 @@ parser.add_argument('--index', metavar='index.fa', type=str, default="default_ex
 parser.add_argument('--translate_table', metavar='/path/to/translate_table.txt', type=str, default="/net/grc/shared/scratch/nkrumm/translate_tables/default_exome.translate.txt", nargs='?',help="Path to correct translate table used to remap exome-based coordinates to genome based coordinates. Default is based on Nimblegen V2 capture.")
 parser.add_argument('--port','-p', metavar='8000', type=int, nargs="?", default = 8000,\
     help="TCP port offset to use. Will use FOUR CONSECUTIVE ports starting with this value. Default port range: 8000-8004")
+parser.add_argument('--chunksize', meatavar='1000000', type=int, default=1000000, help='Number of reads to map per chunk.')
 parser.add_argument('--disable_port_scan',action='store_true',\
     help="Disable initial port scan. Use with caution and only with ports you know are open!")
 parser.add_argument('--disable_gui',action='store_true',\
@@ -76,7 +77,7 @@ BASEPATH =  os.path.dirname(BASEFILE)
 scriptFiles= {"map":  BASEPATH + "/mrsfast_wrapper.py", "vent": BASEPATH + "/ventilator_failsafe3.py", "sink": BASEPATH + "/sink7.py"}
 #scriptFiles= {"map":  BASEPATH + "/mrsfast_wrapper.py", "vent": BASEPATH + "/ventilator_downsampler.py", "sink": BASEPATH + "/sink7.py"}
 totalMappers = args.n_mappers
-maximum_reads_per_destination = 1000000
+maximum_reads_per_destination = args.chunksize
 
 
 ################################################################################################
