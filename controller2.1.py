@@ -173,7 +173,7 @@ if args.single_host:
     job_ids["vent"] = p.pid
 else:
     tempscript = writeQSubFile("module load samtools/latest python/2.7.2 numpy/1.6.1\n python "+scriptFiles["vent"]+" " + controllerNodeName+" " + str(REQ_REP_PORT))
-    qsub_cmd["vent"] = "qsub -pe serial 2 -l h_vmem=%s -l rhel=6 -l h='e11[0-9]|e10[0-9]|e[0-9][0-9]' -S /bin/bash -cwd -o %s -e %s -N %s -j y %s" % (mem_requested["vent"], logDirectory, logDirectory,job_names["vent"], tempscript.name)
+    qsub_cmd["vent"] = "qsub -pe serial 2 -l h_vmem=%s -l rhel=6 -S /bin/bash -cwd -o %s -e %s -N %s -j y %s" % (mem_requested["vent"], logDirectory, logDirectory,job_names["vent"], tempscript.name)
     output,e = submitQSub(qsub_cmd["vent"])
     job_ids["vent"] = output.split(" ")[2]
     vent_time = 0
