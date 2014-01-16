@@ -27,9 +27,9 @@ parser.add_argument('--translate_table', metavar='/path/to/translate_table.txt',
 parser.add_argument('--port','-p', metavar='8000', type=int, nargs="?", default = 8000,\
     help="TCP port offset to use. Will use FOUR CONSECUTIVE ports starting with this value. Default port range: 8000-8004")
 parser.add_argument('--chunksize', metavar='1000000', type=int, default=1000000, help='Number of reads to map per chunk.')
-parser.add_argument('--disable_port_scan',action='store_true',\
+parser.add_argument("--disable-port-scan", '--disable_port_scan',action='store_true',\
     help="Disable initial port scan. Use with caution and only with ports you know are open!")
-parser.add_argument('--disable_gui',action='store_true',\
+parser.add_argument("--disable-gui", '--disable_gui',action='store_true',\
     help="Disable dashboard GUI for running in batch/SGE")
 parser.add_argument('--timeout','-t', metavar='3600', type=int, nargs="?", default = 0,\
     help="Maximum idle timeout before aborting current sample. Default is no timeout. SGE queue time is not included in this.")
