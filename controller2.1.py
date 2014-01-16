@@ -38,11 +38,12 @@ parser.add_argument('--single-host',action='store_true',\
 parser.add_argument('--n-mappers',default=8, help="Number of mapping jobs") 
 
 args = parser.parse_args()
+
 if args.disable_gui:
     gui = False
 else:
     gui = True
-
+    
 sampleID = args.sampleID #str(sys.argv[1])
 tcpPortIndex = args.port #int(sys.argv[2])
 source_filename = args.source #'/net/grc/shared/released_exomes/'+sampleID+'/'+sampleID+'.merged.sorted.nodups.realigned.all_reads.bam'
@@ -554,7 +555,16 @@ while True:
                 f_summary.close()
                 updateMessages(msgHistory, msgScreen, f_log, logLevel, "FINISHED. Terminating all mapping jobs and ventilator.")
                 
-                if not args.single_host:
+                if args.single_host:
+                    # stop the mappers
+                    print job_ids
+                    for jid in job_ids["mappers"]:
+                        os.kill(int(jid), signal.SIGINT)
+                    # stop the vent
+                    os.kill(int(job_ids["vent"]), signal.SIGINT)
+                    # wait for sink to finish
+                    os.waitpid(int(job_ids["sink"]), 0)
+                else:
                     o,e = deleteQSub(job_ids["mappers"])
                     o,e = deleteQSub(job_ids["vent"])               
                 if gui:

@@ -1,10 +1,18 @@
 import sys
 import os
+import signal
 import subprocess
 import argparse
 
+global pid
+
+def SIGINT_handler(s, frame):
+    os.kill(pid, signal.SIGINT)
+    print 'Mapper EXITING with return code 0!'
+    sys.exit(1)
 
 if __name__ == '__main__':
+    signal.signal(signal.SIGINT, SIGINT_handler) # handle Ctrl-C gracefully
     parser = argparse.ArgumentParser()
     parser.add_argument("controllerNode")
     parser.add_argument("controllerPort")
@@ -22,5 +30,9 @@ if __name__ == '__main__':
 
     exec_args = [executable, '-N', args.controllerNode, '-P', args.controllerPort]
 
-    while (returnCode == 1):    
-        returnCode = subprocess.call(exec_args)
+    while (returnCode == 1):
+        #returnCode = subprocess.call(exec_args)
+        p = subprocess.Popen(exec_args)
+        pid = p.pid
+        p.wait()
+
