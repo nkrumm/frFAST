@@ -34,5 +34,5 @@ if __name__ == '__main__':
         #returnCode = subprocess.call(exec_args)
         p = subprocess.Popen(exec_args)
         pid = p.pid
-        p.wait()
+        returnCode = p.wait()
 
