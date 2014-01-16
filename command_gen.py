@@ -46,7 +46,8 @@ python {SCRIPT} \
 fi
 """
 
-FRFAST_SCRIPT="/net/eichler/vol8/home/nkrumm/EXOMES/frFAST/controller2.1.py"
+FRFAST_SCRIPT=os.path.join(os.path.abspath(os.path.dirname(__file__)), "controller2.1.py")
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser("""This script can generate batch files for processing large numbers of exomes with frFAST.
@@ -92,6 +93,7 @@ if __name__ == '__main__':
     parser.add_argument("--single-host",  action="store_true", default=False, help="See frFAST documentation")
     parser.add_argument("--dont-rsync-index",  action="store_true", default=False, help="See frFAST documentation")
     parser.add_argument("--disable-gui",  action="store_true", default=False, help="See frFAST documentation")
+    parser.add_argument("--n-mappers", default=8, help="See frFAST documentation")
     parser.add_argument("-o", "--output-file", help="Batch output file (default is stdout)", default="STDOUT")
     args = parser.parse_args()
     samples = pandas.read_csv(args.input_table, sep="\t")
@@ -119,7 +121,7 @@ if __name__ == '__main__':
         for opt in options:
             opt_string += "--%s " % opt.replace("_", "-")
 
-        opt_string = opt_string.lstrip(" ")
+        opt_string += "--n-mappers %d" % args.n_mappers
 
         out_f.write(TEMPLATE_ROW.format(
             SCRIPT=FRFAST_SCRIPT,
