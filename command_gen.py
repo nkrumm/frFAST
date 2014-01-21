@@ -11,9 +11,10 @@ TEMPLATE_HEADER="""
 module load modules modules-init modules-gs modules-eichler
 module load python/2.7.2
 module load zlib/latest
-module load hdf5/1.8.4
+module load hdf5/1.8.8
 module load numpy/1.6.1
 module load zeromq/2.1.11
+module load pytables/2.3.1_hdf5-1.8.8
 """
 
 # TEMPLATE_ROW="""
