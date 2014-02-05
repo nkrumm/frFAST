@@ -35,7 +35,7 @@ parser.add_argument('--timeout','-t', metavar='3600', type=int, nargs="?", defau
     help="Maximum idle timeout before aborting current sample. Default is no timeout. SGE queue time is not included in this.")
 parser.add_argument('--single-host',action='store_true',\
     help="Run using localhost/tcp-loopback only; Disables SGE queue submission and runs mappers/sinks/vents using subprocesses!")
-parser.add_argument('--n-mappers',default=8, help="Number of mapping jobs") 
+parser.add_argument('--n-mappers',default=8, help="Number of mapping jobs",type=int) 
 
 args = parser.parse_args()
 
