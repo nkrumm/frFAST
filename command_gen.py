@@ -32,7 +32,7 @@ module load pytables/2.3.1_hdf5-1.8.8
 # """
 
 TEMPLATE_ROW="""
-if [ ! -e {OUTPUT} ]; then\n \
+if [ ! -s {OUTPUT} ]; then\n \
 python {SCRIPT} \
 --sampleID={SAMPLE_ID} \
 --source={SOURCE_BAM} \
@@ -96,6 +96,7 @@ if __name__ == '__main__':
     parser.add_argument("--disable-gui",  action="store_true", default=False, help="See frFAST documentation")
     parser.add_argument("--n-mappers", default=8, help="See frFAST documentation")
     parser.add_argument("-o", "--output-file", help="Batch output file (default is stdout)", default="STDOUT")
+    parser.add_argument("--template-header-file", default="", help="Path to template header file")
     args = parser.parse_args()
     samples = pandas.read_csv(args.input_table, sep="\t")
     if ("sampleID" not in samples) or ("bam_path" not in samples):
@@ -106,8 +107,12 @@ if __name__ == '__main__':
     else:
         out_f = sys.stdout
 
-    out_f.write(TEMPLATE_HEADER)
-    
+    if args.template_header_file != "":
+        with open(args.template_header_file, 'r') as template_file:
+            TEMPLATE_HEADER = template_file.readlines()
+            [out_f.write(line) for line in TEMPLATE_HEADER]
+    else:
+        out_f.write(TEMPLATE_HEADER)
 
     for ix, row in samples.iterrows():
         if "output_path" not in row:
