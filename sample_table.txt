@@ -1,0 +1,15 @@
+sampleID	bam_path
+11001.fa	/net/eichler/vol21/projects/autism_exome/nobackups/aspera/incoming/cshl_2013/cutoff-transfer/SSC02184/SSC02184.bam
+11001.mo	/net/eichler/vol21/projects/autism_exome/nobackups/aspera/incoming/cshl_2013/cutoff-transfer/SSC02181/SSC02181.bam
+11001.p1	/net/eichler/vol21/projects/autism_exome/nobackups/aspera/incoming/cshl_2013/cutoff-transfer/SSC02178/SSC02178.bam
+11002.fa	/net/eichler/vol21/projects/autism_exome/nobackups/aspera/incoming/cshl_2013/cutoff-transfer/SSC03092/SSC03092.bam
+11002.mo	/net/eichler/vol21/projects/autism_exome/nobackups/aspera/incoming/cshl_2013/cutoff-transfer/SSC03078/SSC03078.bam
+11002.p1	/net/eichler/vol21/projects/autism_exome/nobackups/aspera/incoming/cshl_2013/cutoff-transfer/SSC03070/SSC03070.bam
+11002.s1	/net/eichler/vol21/projects/autism_exome/nobackups/aspera/incoming/cshl_2013/cutoff-transfer/SSC03093/SSC03093.bam
+11005.fa	/net/eichler/vol21/projects/autism_exome/nobackups/aspera/incoming/cshl_2013/cutoff-transfer/SSC00566/SSC00566.bam
+11005.mo	/net/eichler/vol21/projects/autism_exome/nobackups/aspera/incoming/cshl_2013/cutoff-transfer/SSC00565/SSC00565.bam
+11005.p1	/net/eichler/vol21/projects/autism_exome/nobackups/aspera/incoming/cshl_2013/cutoff-transfer/SSC00556/SSC00556.bam
+11005.s1	/net/eichler/vol21/projects/autism_exome/nobackups/aspera/incoming/cshl_2013/cutoff-transfer/SSC00564/SSC00564.bam
+11007.fa	/net/eichler/vol21/projects/autism_exome/nobackups/aspera/incoming/cshl_2013/cutoff-transfer/SSC00283/SSC00283.bam
+11007.mo	/net/eichler/vol21/projects/autism_exome/nobackups/aspera/incoming/cshl_2013/cutoff-transfer/SSC00281/SSC00281.bam
+11007.p1	/net/eichler/vol21/projects/autism_exome/nobackups/aspera/incoming/cshl_2013/cutoff-transfer/SSC00277/SSC00277.bam
