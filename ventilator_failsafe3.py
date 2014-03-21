@@ -184,7 +184,9 @@ while not endOfFile:
         except StopIteration:
             endOfFile = True
             break
-        
+        if read.rlen < 36:
+            # skip this read!
+            continue
         if read.is_reverse:
             if read.rlen == 36:
                 readstreamer.send("%s %s" % (read.qname, reverseComplement(read.seq[rc_offset_start_36:])))
